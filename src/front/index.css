@@ -1,0 +1,52 @@
+:root {
+	--fc-light: #eeebdd;
+	--fc-red: #810000;
+	--fc-darkred: #630000;
+	--fc-dark: #1b1717;
+}
+
+/* Clases de apoyo para la paleta de FlavorCritic */
+.bg-fc-dark {
+	background-color: var(--fc-dark) !important;
+}
+.text-fc-light {
+	color: var(--fc-light) !important;
+}
+.text-fc-red {
+	color: var(--fc-red) !important;
+}
+
+.navbar-custom {
+	border-bottom: 1px solid var(--fc-red);
+}
+
+.nav-link-custom {
+	color: var(--fc-light) !important;
+	text-decoration: none;
+	transition: color 0.2s ease-in-out;
+}
+
+.nav-link-custom:hover {
+	color: var(--fc-red) !important;
+}
+
+.btn-fc-red {
+	background-color: var(--fc-red) !important;
+	color: var(--fc-light) !important;
+	border: none !important;
+	transition: background-color 0.2s ease-in-out;
+}
+
+.btn-fc-red:hover {
+	background-color: var(--fc-darkred) !important;
+}
+
+/* Estilos específicos para el Sidebar (Offcanvas) */
+.offcanvas-custom {
+	background-color: var(--fc-dark) !important;
+	border-left: 1px solid var(--fc-red) !important;
+}
+
+.btn-close-custom {
+	filter: invert(1) grayscale(100%) brightness(200%);
+}
