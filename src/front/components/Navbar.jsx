@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 export const Navbar = () => {
 	const [isOpen, setIsOpen] = useState(false);
-
 	const closeMenu = () => setIsOpen(false);
 	const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -27,17 +26,32 @@ export const Navbar = () => {
 							<Link to="/categorias" className="nav-link-custom">Categorías</Link>
 
 							{/* BARRA DE BÚSQUEDA */}
-							<div className="position-relative">
+							<div className="position-relative" style={{ width: "250px" }}>
 								<input
 									type="text"
-									className="form-control rounded-pill px-3 py-1"
+									className="form-control rounded-pill"
 									placeholder="Buscar..."
-									style={{ backgroundColor: "var(--fc-light)", color: "var(--fc-dark)", width: "250px", paddingLeft: "35px" }}
+									style={{
+										backgroundColor: "var(--fc-light)",
+										color: "var(--fc-dark)",
+										width: "100%",
+										paddingLeft: "40px", // Espacio suficiente para que el texto no toque la lupa
+										paddingTop: "0.25rem",
+										paddingBottom: "0.25rem"
+									}}
 								/>
 								<svg
 									className="position-absolute top-50 translate-middle-y"
-									style={{ left: "12px", width: "16px", height: "16px", color: "var(--fc-dark)" }}
-									fill="none" stroke="currentColor" viewBox="0 0 24 24"
+									style={{
+										left: "15px", // Posición fija desde el borde izquierdo del contenedor
+										width: "16px",
+										height: "16px",
+										color: "var(--fc-dark)",
+										pointerEvents: "none" // Para que al hacer clic en la lupa se active el input
+									}}
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
 								>
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 								</svg>
@@ -50,7 +64,7 @@ export const Navbar = () => {
 
 							{/* BOTÓN DE USUARIO */}
 							<Link to="/perfil" className="nav-link-custom">
-								<svg style={{ width: "24px", height: "24px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg className="border border-white rounded-circle p-1" style={{ width: "34px", height: "34px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 								</svg>
 							</Link>
