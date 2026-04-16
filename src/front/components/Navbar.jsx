@@ -35,7 +35,7 @@ export const Navbar = () => {
 										backgroundColor: "var(--fc-light)",
 										color: "var(--fc-dark)",
 										width: "100%",
-										paddingLeft: "40px", // Espacio suficiente para que el texto no toque la lupa
+										paddingLeft: "40px",
 										paddingTop: "0.25rem",
 										paddingBottom: "0.25rem"
 									}}
@@ -43,11 +43,10 @@ export const Navbar = () => {
 								<svg
 									className="position-absolute top-50 translate-middle-y"
 									style={{
-										left: "15px", // Posición fija desde el borde izquierdo del contenedor
-										width: "16px",
+										left: "15px",
 										height: "16px",
 										color: "var(--fc-dark)",
-										pointerEvents: "none" // Para que al hacer clic en la lupa se active el input
+										pointerEvents: "none"
 									}}
 									fill="none"
 									stroke="currentColor"

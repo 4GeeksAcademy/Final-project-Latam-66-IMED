@@ -1,7 +1,7 @@
 :root {
 	--fc-light: #eeebdd;
-	--fc-red: #810000;
-	--fc-darkred: #630000;
+	--fc-red: #a40505;
+	--fc-darkred: #8d0505;
 	--fc-dark: #1b1717;
 }
 
@@ -53,30 +53,32 @@
 
 /* Estilos para el Footer */
 .footer-link {
-  color: var(--fc-light) !important;
-  text-decoration: none;
-  transition: color 0.2s ease-in-out;
-  font-size: 0.95rem;
+	color: var(--fc-light) !important;
+	text-decoration: none;
+	transition: color 0.2s ease-in-out;
+	font-size: 0.95rem;
 }
 
 .footer-link:hover {
-  color: var(--fc-red) !important;
+	color: var(--fc-red) !important;
 }
 
 .social-icon {
-  color: var(--fc-light);
-  transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+	color: var(--fc-light);
+	transition:
+		transform 0.2s ease-in-out,
+		color 0.2s ease-in-out;
 }
 
 .social-icon:hover {
-  color: var(--fc-red) !important;
-  transform: translateY(-3px);
+	color: var(--fc-red) !important;
+	transform: translateY(-3px);
 }
 
 .footer-title {
-  color: var(--fc-red);
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
+	color: var(--fc-red);
+	font-weight: 700;
+	text-transform: uppercase;
+	font-size: 1.1rem;
+	margin-bottom: 1.5rem;
 }
