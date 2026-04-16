@@ -1,19 +1,27 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
 
 db = SQLAlchemy()
 
-class User(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    # Aumentamos a 250 para soportar el hash de la contraseña
+    password = db.Column(db.String(250), unique=False, nullable=False)
+    is_active = db.Column(db.Boolean(), unique=False,
+                          nullable=False, default=True)
+    # Añadimos la columna role. Por defecto todos son 'user'
+    role = db.Column(db.String(20), unique=False,
+                     nullable=False, default="user")
+
+    def __repr__(self):
+        return f'<User {self.email}>'
 
     def serialize(self):
         return {
             "id": self.id,
             "email": self.email,
-            # do not serialize the password, its a security breach
+            "role": self.role,
+            "is_active": self.is_active
+            
         }

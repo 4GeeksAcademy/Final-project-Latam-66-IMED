@@ -58,7 +58,7 @@ export const Navbar = () => {
 
 							<Link to="/login" className="nav-link-custom">Log-In</Link>
 							<Link to="/signup" className="btn btn-fc-red rounded-2 px-4 py-2 fw-medium">
-								Sign-In
+								Sign-Up
 							</Link>
 
 							{/* BOTÓN DE USUARIO */}
