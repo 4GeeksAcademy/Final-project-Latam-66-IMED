@@ -11,6 +11,8 @@ import { Demo } from "./pages/Demo";
 
 import { Signup } from "./pages/Signup";
 
+import { Login } from "./pages/Login";
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
@@ -27,6 +29,8 @@ export const router = createBrowserRouter(
       <Route path="/demo" element={<Demo />} />
 
       <Route path="/signup" element={<Signup />} />
+
+      <Route path="/login" element={<Login />} />
 
     </Route>
   )
