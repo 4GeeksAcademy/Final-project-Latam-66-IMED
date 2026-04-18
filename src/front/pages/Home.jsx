@@ -1,52 +1,31 @@
-import React, { useEffect } from "react"
-import rigoImageUrl from "../assets/img/rigo-baby.jpg";
-import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import React from "react";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import { RestaurantCard } from "../components/RestaurantCard";
 
 export const Home = () => {
+    const { store } = useGlobalReducer();
 
-	const { store, dispatch } = useGlobalReducer()
+    return (
+        <div className="container-fluid py-5" style={{ backgroundColor: "#fdfdfd" }}>
+            <div className="container">
+                <h2 className="fw-bold mb-4" style={{ color: "#333" }}>
+                    Destacados en <span style={{ color: "#D32F2F" }}>Caracas</span>
+                </h2>
 
-	const loadMessage = async () => {
-		try {
-			const backendUrl = import.meta.env.VITE_BACKEND_URL
-
-			if (!backendUrl) throw new Error("VITE_BACKEND_URL is not defined in .env file")
-
-			const response = await fetch(backendUrl + "/api/hello")
-			const data = await response.json()
-
-			if (response.ok) dispatch({ type: "set_hello", payload: data.message })
-
-			return data
-
-		} catch (error) {
-			if (error.message) throw new Error(
-				`Could not fetch the message from the backend.
-				Please check if the backend is running and the backend port is public.`
-			);
-		}
-
-	}
-
-	useEffect(() => {
-		loadMessage()
-	}, [])
-
-	return (
-		<div className="text-center mt-5">
-			<h1 className="display-4">Hello Rigo!!</h1>
-			<p className="lead">
-				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
-			</p>
-			<div className="alert alert-info">
-				{store.message ? (
-					<span>{store.message}</span>
-				) : (
-					<span className="text-danger">
-						Loading message from the backend (make sure your python 🐍 backend is running)...
-					</span>
-				)}
-			</div>
-		</div>
-	);
-}; 
+                {/* CONFIGURACIÓN DE COLUMNAS:
+                  row-cols-1: Mobile / celular (1 columna)
+                  row-cols-sm-2: Tablets/Small (2 columnas)
+                  row-cols-md-3: Tablets grandes (3 columnas)
+                  row-cols-lg-4: Desktop / PC normal / laptops (4 columnas)
+                */}
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+                    {store.restaurants.map((rest) => (
+                        <div key={rest.id} className="col">
+                            <RestaurantCard restaurant={rest} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};

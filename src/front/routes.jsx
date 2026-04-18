@@ -8,33 +8,33 @@ import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
 import { Demo } from "./pages/Demo";
-
 import { Signup } from "./pages/Signup";
-
 import { Login } from "./pages/Login";
-
 import { AdminDashboard } from "./pages/AdminDashboard";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
-
+    
     // Root Route: All navigation will start from here.
+    // El Layout envuelve a todos sus hijos y les proporciona el Navbar y el Footer
     <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
-      <Route path="/" element={<Home />} />
-      <Route path="/single/:theId" element={<Single />} />
-      <Route path="/demo" element={<Demo />} />
-
-      <Route path="/signup" element={<Signup />} />
-
-      <Route path="/login" element={<Login />} />
-
-      <Route path="/admin" element={<AdminDashboard />} />
+      {/* CORRECCIÓN 1: Usamos 'index' en lugar de path="/" 
+        Esto le dice a React Router: "Cuando el usuario visite la ruta padre (/), 
+        muestra el componente Home por defecto dentro del Outlet".
+      */}
+      <Route index element={<Home />} />
+      
+      {/* CORRECCIÓN 2: Rutas relativas.
+        Al quitar el "/" inicial, le decimos que estos paths se suman al padre.
+        Ejemplo: el padre es "/" + el hijo es "login" = "/login"
+      */}
+      <Route path="single/:theId" element={<Single />} />
+      <Route path="demo" element={<Demo />} />
+      <Route path="signup" element={<Signup />} />
+      <Route path="login" element={<Login />} />
+      <Route path="admin" element={<AdminDashboard />} />
 
     </Route>
   )

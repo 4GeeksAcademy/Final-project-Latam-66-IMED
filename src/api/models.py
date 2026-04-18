@@ -30,20 +30,21 @@ class User(db.Model):
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    location = db.Column(db.String(250), nullable=False)
-    food_type = db.Column(db.String(80), nullable=False)
-    photo_url = db.Column(db.String(500), nullable=True)
-    description = db.Column(db.Text, nullable=False)
-    # El score lo calcularemos dinámicamente o lo guardaremos como promedio
-    base_score = db.Column(db.Float, default=0.0) 
-
+    image_url = db.Column(db.String(500), nullable=True)
+    score = db.Column(db.Integer, default=0) # El MetaScore
+    food_type = db.Column(db.String(80), nullable=False) # ej: Sushi, Pasta
+    cuisine_origin = db.Column(db.String(80), nullable=False) # ej: Japonesa, Italiana
+    description = db.Column(db.Text, nullable=True)
+    city = db.Column(db.String(80), nullable=False)
+    
     def serialize(self):
         return {
             "id": self.id,
             "name": self.name,
-            "location": self.location,
+            "image_url": self.image_url,
+            "score": self.score,
             "food_type": self.food_type,
-            "photo_url": self.photo_url,
+            "cuisine_origin": self.cuisine_origin,
             "description": self.description,
-            "score": self.base_score
+            "city": self.city
         }
