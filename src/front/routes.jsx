@@ -13,6 +13,8 @@ import { Signup } from "./pages/Signup";
 
 import { Login } from "./pages/Login";
 
+import { AdminDashboard } from "./pages/AdminDashboard";
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
@@ -25,12 +27,14 @@ export const router = createBrowserRouter(
     <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
       <Route path="/" element={<Home />} />
-      <Route path="/single/:theId" element={<Single />} /> 
+      <Route path="/single/:theId" element={<Single />} />
       <Route path="/demo" element={<Demo />} />
 
       <Route path="/signup" element={<Signup />} />
 
       <Route path="/login" element={<Login />} />
+
+      <Route path="/admin" element={<AdminDashboard />} />
 
     </Route>
   )

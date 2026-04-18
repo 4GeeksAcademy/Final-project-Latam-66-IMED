@@ -31,9 +31,13 @@ export const Login = () => {
                 // 3. ¡Paso crucial! Guardamos el token de autenticación
                 // Asumiendo que tu backend devuelve el token bajo la propiedad 'access_token'
                 sessionStorage.setItem("token", data.access_token);
-                
-                // 4. Redirigimos al usuario a la vista protegida (ej: home o dashboard)
-                navigate("/");
+                sessionStorage.setItem("role", data.role); // Guardamos el rol
+
+                if (data.role === "admin") {
+                    navigate("/admin");
+                } else {
+                    navigate("/");
+                }
             } else {
                 setError(data.msg || "Credenciales inválidas. Inténtalo de nuevo.");
             }
