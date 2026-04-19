@@ -20,9 +20,9 @@ static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
 app.url_map.strict_slashes = False
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
-app.config["JWT_SECRET_KEY"] = "clave-secreta" # Puede ser cualquier frase
+app.config["JWT_SECRET_KEY"] = "clave-secreta"  # Puede ser cualquier frase
 jwt = JWTManager(app)
 
 # database condiguration
@@ -63,6 +63,8 @@ def sitemap():
     return send_from_directory(static_file_dir, 'index.html')
 
 # any other endpoint will try to serve it like a static file
+
+
 @app.route('/<path:path>', methods=['GET'])
 def serve_any_other_file(path):
     if not os.path.isfile(os.path.join(static_file_dir, path)):

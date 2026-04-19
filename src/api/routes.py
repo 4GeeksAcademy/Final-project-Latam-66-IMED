@@ -1,9 +1,7 @@
 from flask import Flask, request, jsonify, Blueprint
-from api.models import db, User
+from api.models import db, User, Restaurant
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from flask_cors import CORS
-
 from flask_jwt_extended import create_access_token
 
 api = Blueprint('api', __name__)
@@ -42,10 +40,9 @@ def create_user():
         return jsonify({"msg": "Usuario creado exitosamente", "user": new_user.serialize()}), 201
     except Exception as e:
         db.session.rollback()  # Deshace los cambios
-        
+
         print(f"🔥 ERROR FATAL EN LA BASE DE DATOS: {str(e)}")
         return jsonify({"msg": f"Error real: {str(e)}"}), 500
-
 
 
 # ruta del Login
@@ -59,35 +56,93 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     # 2. Verificamos si el usuario existe y si la contraseña coincide con el Hash
-    if not user or not check_password_hash(user.password, password): 
+    if not user or not check_password_hash(user.password, password):
         return jsonify({"msg": "Correo o contraseña incorrectos"}), 401
 
     # 3. Como ya guardaste el rol correctamente en el Signup, ¡solo lo leemos!
     role = user.role
-    
+
     # 4. Creamos el token
     access_token = create_access_token(identity=user.id)
-    return jsonify({ 
-        "access_token": access_token, 
-        "role": role, 
-        "user_id": user.id 
+    return jsonify({
+        "access_token": access_token,
+        "role": role,
+        "user_id": user.id
     }), 200
 
 
-# ENDPOINTS PARA RESTAURANTES (CRUD)
-@api.route('/restaurants', methods=['GET', 'POST'])
-def handle_restaurants():
-    if request.method == 'GET':
-        restaurants = Restaurant.query.all()
-        return jsonify([r.serialize() for r in restaurants]), 200
-    
-    if request.method == 'POST':
-        body = request.get_json()
-        new_rest = Restaurant(
-            name=body['name'], location=body['location'],
-            food_type=body['food_type'], photo_url=body['photo_url'],
-            description=body['description']
-        )
-        db.session.add(new_rest)
-        db.session.commit()
-        return jsonify(new_rest.serialize()), 201
+# OBTENER TODOS LOS RESTAURANTES (GET)
+@api.route('/restaurants', methods=['GET'])
+def get_restaurants():
+    # 1. Busca todos los restaurantes en la base de datos
+    restaurants = Restaurant.query.all()
+
+    # 2. Los convierte a formato JSON usando tu función serialize()
+    result = [r.serialize() for r in restaurants]
+
+    # 3. Los envía al frontend
+    return jsonify(result), 200
+
+
+# CREAR (POST)
+@api.route('/restaurants', methods=['POST'])
+def create_restaurant():
+    body = request.get_json()
+    if not body:
+        return jsonify({"msg": "El cuerpo de la petición está vacío"}), 400
+
+    # Ojo: el score lo dejamos en su default (0) al crearlo
+    new_restaurant = Restaurant(
+        name=body.get("name"),
+        image_url=body.get("image_url"),
+        food_type=body.get("food_type"),
+        cuisine_origin=body.get("cuisine_origin"),
+        description=body.get("description"),
+        city=body.get("city")
+    )
+    db.session.add(new_restaurant)
+    db.session.commit()
+
+    return jsonify({"msg": "Restaurante creado exitosamente", "restaurant": new_restaurant.serialize()}), 201
+
+# EDITAR (PUT)
+
+
+@api.route('/restaurants/<int:restaurant_id>', methods=['PUT'])
+def update_restaurant(restaurant_id):
+    restaurant = Restaurant.query.get(restaurant_id)
+    if not restaurant:
+        return jsonify({"msg": "Restaurante no encontrado"}), 404
+
+    body = request.get_json()
+
+    # Actualizamos solo los campos que vengan en la petición
+    if "name" in body:
+        restaurant.name = body["name"]
+    if "image_url" in body:
+        restaurant.image_url = body["image_url"]
+    if "food_type" in body:
+        restaurant.food_type = body["food_type"]
+    if "cuisine_origin" in body:
+        restaurant.cuisine_origin = body["cuisine_origin"]
+    if "description" in body:
+        restaurant.description = body["description"]
+    if "city" in body:
+        restaurant.city = body["city"]
+
+    db.session.commit()
+    return jsonify({"msg": "Restaurante actualizado", "restaurant": restaurant.serialize()}), 200
+
+# ELIMINAR (DELETE)
+
+
+@api.route('/restaurants/<int:restaurant_id>', methods=['DELETE'])
+def delete_restaurant(restaurant_id):
+    restaurant = Restaurant.query.get(restaurant_id)
+    if not restaurant:
+        return jsonify({"msg": "Restaurante no encontrado"}), 404
+
+    db.session.delete(restaurant)
+    db.session.commit()
+
+    return jsonify({"msg": "Restaurante eliminado correctamente"}), 200
