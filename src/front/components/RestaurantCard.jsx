@@ -39,7 +39,7 @@ export const RestaurantCard = ({ restaurant }) => {
             {/* 3. Imagen Central Responsive */}
             <div className="ratio ratio-16x9">
                 <img 
-                    src={restaurant.image_url || "https://placehold.co/600x400?text=Sabor+Caracas"} 
+                    src={restaurant.image_url || "https://placehold.co/600x400?text=Flavor+Critic"} 
                     className="card-img-top object-fit-cover" 
                     alt={restaurant.name} 
                 />
@@ -73,7 +73,7 @@ export const RestaurantCard = ({ restaurant }) => {
 
                 {/* 7. Descripción Breve */}
                 <p className="card-text text-muted small flex-grow-1">
-                    {restaurant.description || "Disfruta de la mejor gastronomía de Caracas con ingredientes frescos y un ambiente único."}
+                    {restaurant.description || "Disfruta de la mejor gastronomía con ingredientes frescos y un ambiente único."}
                 </p>
 
                 {/* 8. Indicador de Ranking Inferior */}

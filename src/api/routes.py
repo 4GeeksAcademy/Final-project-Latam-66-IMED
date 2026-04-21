@@ -64,7 +64,7 @@ def login():
     role = user.role
 
     # 4. Creamos el token
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
     return jsonify({
         "access_token": access_token,
         "role": role,
@@ -114,9 +114,8 @@ def create_restaurant():
 
     return jsonify({"msg": "Restaurante creado exitosamente", "restaurant": new_restaurant.serialize()}), 201
 
+
 # EDITAR (PUT)
-
-
 @api.route('/restaurants/<int:restaurant_id>', methods=['PUT'])
 @jwt_required()
 def update_restaurant(restaurant_id):
