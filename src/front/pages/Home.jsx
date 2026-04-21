@@ -1,9 +1,31 @@
-import React from "react";
+import React, { useEffect } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { RestaurantCard } from "../components/RestaurantCard";
 
 export const Home = () => {
-    const { store } = useGlobalReducer();
+    const { store, dispatch } = useGlobalReducer();
+
+    useEffect(() => {
+        // Comprobamos si la lista de restaurantes está vacía
+        if (!store.restaurants || store.restaurants.length === 0) {
+            const fetchPublicRestaurants = async () => {
+                try {
+                    // Hacemos el GET público al backend
+                    const resp = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/restaurants");
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        // Guardamos los datos en la memoria global para que las Cards los puedan pintar
+                        dispatch({ type: "set_restaurants", payload: data });
+                    } else {
+                        console.error("Error del servidor:", resp.status);
+                    }
+                } catch (error) {
+                    console.error("Error de conexión:", error);
+                }
+            };
+            fetchPublicRestaurants();
+        }
+    }, []); // <-- El array vacío es vital para que solo lo busque una vez al entrar
 
     return (
         <div className="container-fluid py-5" style={{ backgroundColor: "#fdfdfd" }}>
@@ -19,12 +41,18 @@ export const Home = () => {
                   row-cols-lg-4: Desktop / PC normal / laptops (4 columnas)
                 */}
                 <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                    {store.restaurants.map((rest) => (
+                    {/* 3. Agregamos (store.restaurants || []) por seguridad si la lista aún no carga */}
+                    {(store.restaurants || []).map((rest) => (
                         <div key={rest.id} className="col">
                             <RestaurantCard restaurant={rest} />
                         </div>
                     ))}
                 </div>
+
+                {/* Mensaje de carga mientras llegan los datos */}
+                {(!store.restaurants || store.restaurants.length === 0) && (
+                    <p className="text-center mt-5 text-secondary">Cargando los mejores restaurantes...</p>
+                )}
             </div>
         </div>
     );

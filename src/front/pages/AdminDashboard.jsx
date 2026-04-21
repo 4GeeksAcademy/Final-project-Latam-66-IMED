@@ -1,44 +1,54 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Importamos el hook de redirección
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
-const initialFormState = {
-    name: "",
-    image_url: "",
-    food_type: "",
-    cuisine_origin: "",
-    city: "",
-    description: ""
-};
-
 export const AdminDashboard = () => {
-    // Solo extraemos store y dispatch, las actions aquí no existen
     const { store, dispatch } = useGlobalReducer();
+    const navigate = useNavigate(); // Inicializamos el hook
 
-    // Estados locales para manejar la UI
+    const initialFormState = {
+        name: "",
+        image_url: "",
+        food_type: "",
+        cuisine_origin: "",
+        city: "",
+        description: ""
+    };
+
+    const [formData, setFormData] = useState(initialFormState);
+    const [editingId, setEditingId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
     const [filterName, setFilterName] = useState("");
     const [filterType, setFilterType] = useState("");
 
-    // Estados para el CRUD
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState(initialFormState);
-    const [editingId, setEditingId] = useState(null);
-
-    // 1. CARGAR DATOS REALES
+    // PROTECCIÓN DE RUTA Y CARGA DE DATOS
     useEffect(() => {
-        const fetchRestaurants = async () => {
-            try {
-                // Asegúrate de que import.meta.env.VITE_BACKEND_URL esté definido en tu .env
-                const resp = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/restaurants");
-                if (resp.ok) {
-                    const data = await resp.json();
-                    dispatch({ type: "set_restaurants", payload: data });
+        const role = sessionStorage.getItem("role");
+        const token = sessionStorage.getItem("token");
+
+        // 1. Si no es admin, lo pateamos inmediatamente
+        if (!token || role !== "admin") {
+            navigate("/");
+            return; // Detiene la ejecución aquí
+        }
+
+        // 2. Si pasó la seguridad, comprobamos si el store está vacío
+        // Si está vacío (por ejemplo, si presionó F5), los buscamos.
+        if (!store.restaurants || store.restaurants.length === 0) {
+            const fetchAdminRestaurants = async () => {
+                try {
+                    const resp = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/restaurants");
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        dispatch({ type: "set_restaurants", payload: data });
+                    }
+                } catch (error) {
+                    console.error("Error cargando restaurantes en el dashboard:", error);
                 }
-            } catch (error) {
-                console.error("Error al cargar:", error);
-            }
-        };
-        fetchRestaurants();
-    }, []);
+            };
+            fetchAdminRestaurants();
+        }
+    }, []); // El array vacío asegura que esto corra solo al montar el componente
 
     // Filtramos usando store.restaurants (que ahora viene de la base de datos real)
     const restaurantsList = store.restaurants || [];
@@ -54,6 +64,10 @@ export const AdminDashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // 1. Recuperamos la llave de la sesión
+        const token = sessionStorage.getItem("token");
+
         const url = editingId
             ? `${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${editingId}`
             : `${import.meta.env.VITE_BACKEND_URL}/api/restaurants`;
@@ -63,7 +77,10 @@ export const AdminDashboard = () => {
         try {
             const resp = await fetch(url, {
                 method: method,
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` // <--- ENTREGAMOS LA LLAVE AQUÍ
+                },
                 body: JSON.stringify(formData)
             });
 
@@ -81,7 +98,9 @@ export const AdminDashboard = () => {
                 setEditingId(null);
                 setShowForm(false);
             } else {
-                alert("Error al guardar el restaurante");
+                // Si el backend te rechaza (ej. token vencido), te lo dirá aquí
+                const errorData = await resp.json();
+                alert(`Error: ${errorData.msg || "No se pudo guardar"}`);
             }
         } catch (error) {
             console.error("Error:", error);
@@ -105,13 +124,23 @@ export const AdminDashboard = () => {
 
     const handleDelete = async (id) => {
         if (window.confirm("¿Seguro que quieres eliminar este restaurante permanentemente?")) {
+            // 1. Recuperamos la llave de la sesión
+            const token = sessionStorage.getItem("token");
+
             try {
                 const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
-                    method: "DELETE"
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": `Bearer ${token}` // <--- ENTREGAMOS LA LLAVE AQUÍ TAMBIÉN
+                    }
                 });
+
                 if (resp.ok) {
                     dispatch({ type: "delete_restaurant", payload: id });
                     alert("Eliminado con éxito");
+                } else {
+                    const errorData = await resp.json();
+                    alert(`Error: ${errorData.msg || "No se pudo eliminar"}`);
                 }
             } catch (error) {
                 console.error("Error eliminando:", error);

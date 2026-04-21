@@ -3,6 +3,7 @@ from api.models import db, User, Restaurant
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 api = Blueprint('api', __name__)
 
@@ -86,12 +87,20 @@ def get_restaurants():
 
 # CREAR (POST)
 @api.route('/restaurants', methods=['POST'])
+@jwt_required()  # <--- 1. Exige que el usuario envíe un token válido
 def create_restaurant():
+    # 2. Obtenemos el ID del usuario desde el token
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    # 3. Verificamos si es administrador
+    if not user or user.role != "admin":
+        return jsonify({"msg": "Acceso denegado: Se requieren permisos de administrador"}), 403
+
     body = request.get_json()
     if not body:
         return jsonify({"msg": "El cuerpo de la petición está vacío"}), 400
 
-    # Ojo: el score lo dejamos en su default (0) al crearlo
     new_restaurant = Restaurant(
         name=body.get("name"),
         image_url=body.get("image_url"),
@@ -109,14 +118,19 @@ def create_restaurant():
 
 
 @api.route('/restaurants/<int:restaurant_id>', methods=['PUT'])
+@jwt_required()
 def update_restaurant(restaurant_id):
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user or user.role != "admin":
+        return jsonify({"msg": "Acceso denegado"}), 403
+
     restaurant = Restaurant.query.get(restaurant_id)
     if not restaurant:
         return jsonify({"msg": "Restaurante no encontrado"}), 404
 
     body = request.get_json()
 
-    # Actualizamos solo los campos que vengan en la petición
     if "name" in body:
         restaurant.name = body["name"]
     if "image_url" in body:
@@ -137,7 +151,13 @@ def update_restaurant(restaurant_id):
 
 
 @api.route('/restaurants/<int:restaurant_id>', methods=['DELETE'])
+@jwt_required()
 def delete_restaurant(restaurant_id):
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user or user.role != "admin":
+        return jsonify({"msg": "Acceso denegado"}), 403
+
     restaurant = Restaurant.query.get(restaurant_id)
     if not restaurant:
         return jsonify({"msg": "Restaurante no encontrado"}), 404
