@@ -1,10 +1,23 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export const Navbar = () => {
 	const [isOpen, setIsOpen] = useState(false);
 	const closeMenu = () => setIsOpen(false);
 	const toggleMenu = () => setIsOpen(!isOpen);
+
+	const navigate = useNavigate();
+
+	// Verificamos si hay una sesión activa y leemos el rol del usuario
+	const token = sessionStorage.getItem("token");
+	const role = sessionStorage.getItem("role");
+
+	// Función para cerrar sesión
+	const handleLogout = () => {
+		sessionStorage.removeItem("token");
+		sessionStorage.removeItem("role");
+		navigate("/");
+	};
 
 	return (
 		<>
@@ -56,17 +69,37 @@ export const Navbar = () => {
 								</svg>
 							</div>
 
-							<Link to="/login" className="nav-link-custom">Log-In</Link>
-							<Link to="/signup" className="btn btn-fc-red rounded-2 px-4 py-2 fw-medium">
-								Sign-Up
-							</Link>
+							{/* RENDERIZADO CONDICIONAL DESKTOP */}
+							{token ? (
+								<>
+									{/* Botón exclusivo para el administrador */}
+									{role === "admin" && (
+										<Link to="/admin" className="btn btn-outline-warning rounded-2 px-4 py-2 fw-medium">
+											Panel Admin
+										</Link>
+									)}
+									<button
+										onClick={handleLogout}
+										className="btn btn-fc-red rounded-2 px-4 py-2 fw-medium"
+									>
+										Log-Out
+									</button>
 
-							{/* BOTÓN DE USUARIO */}
-							<Link to="/perfil" className="nav-link-custom">
-								<svg className="border border-white rounded-circle p-1" style={{ width: "34px", height: "34px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-								</svg>
-							</Link>
+									{/* BOTÓN DE USUARIO (Solo visible con sesión iniciada) */}
+									<Link to="/perfil" className="nav-link-custom">
+										<svg className="border border-white rounded-circle p-1" style={{ width: "34px", height: "34px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+										</svg>
+									</Link>
+								</>
+							) : (
+								<>
+									<Link to="/login" className="nav-link-custom">Log-In</Link>
+									<Link to="/signup" className="btn btn-fc-red rounded-2 px-4 py-2 fw-medium">
+										Sign-Up
+									</Link>
+								</>
+							)}
 						</div>
 
 						{/* MOBILE HAMBURGER BUTTON */}
@@ -112,17 +145,40 @@ export const Navbar = () => {
 
 					<hr className="text-fc-red my-1" />
 
-					<Link to="/login" onClick={closeMenu} className="nav-link-custom fs-5">Log-In</Link>
-					<Link to="/signup" onClick={closeMenu} className="text-decoration-none text-fc-red fs-5 fw-bold">Sign-In</Link>
+					{/* RENDERIZADO CONDICIONAL MOBILE */}
+					{token ? (
+						<>
+							{/* Opción exclusiva de Administrador en versión móvil */}
+							{role === "admin" && (
+								<Link to="/admin" onClick={closeMenu} className="text-decoration-none text-warning fs-5 fw-bold">
+									Panel Admin
+								</Link>
+							)}
+							<button
+								onClick={() => { handleLogout(); closeMenu(); }}
+								className="btn btn-link text-decoration-none text-fc-red fs-5 fw-bold text-start p-0 border-0"
+							>
+								Log-Out
+							</button>
+						</>
+					) : (
+						<>
+							<Link to="/login" onClick={closeMenu} className="nav-link-custom fs-5">Log-In</Link>
+							<Link to="/signup" onClick={closeMenu} className="text-decoration-none text-fc-red fs-5 fw-bold">Sign-Up</Link>
+						</>
+					)}
 
-					<div className="mt-auto border-top pt-4" style={{ borderColor: "var(--fc-darkred)" }}>
-						<Link to="/perfil" onClick={closeMenu} className="nav-link-custom fs-5 d-flex align-items-center gap-2">
-							<svg style={{ width: "24px", height: "24px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-							</svg>
-							Mi Cuenta
-						</Link>
-					</div>
+					{/* PERFIL MOBILE AL FONDO (Solo visible con sesión iniciada) */}
+					{token && (
+						<div className="mt-auto border-top pt-4" style={{ borderColor: "var(--fc-darkred)" }}>
+							<Link to="/perfil" onClick={closeMenu} className="nav-link-custom fs-5 d-flex align-items-center gap-2">
+								<svg style={{ width: "24px", height: "24px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+								</svg>
+								Mi Cuenta
+							</Link>
+						</div>
+					)}
 				</div>
 			</div>
 		</>
