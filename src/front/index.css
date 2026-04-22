@@ -82,3 +82,43 @@
 	font-size: 1.1rem;
 	margin-bottom: 1.5rem;
 }
+
+
+/* --- ANIMACIONES DE RESTAURANT CARD --- */
+
+/* 1. Base de la tarjeta */
+.animated-card {
+    /* Preparamos la tarjeta para que cualquier cambio tome 0.3 segundos */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* 2. Efecto Hover de la tarjeta principal */
+.animated-card:hover {
+    /* La levantamos y la hacemos un 2% más grande */
+    transform: translateY(-8px) scale(1.02);
+    /* Usamos la variable de color que le pasaremos desde React */
+    box-shadow: 0 15px 30px var(--hover-shadow) !important;
+    /* Oscurecemos ligeramente el borde base */
+    border-color: var(--hover-border) !important;
+}
+
+/* 3. Base de la imagen */
+.animated-card .card-img-top {
+    transition: transform 0.5s ease;
+}
+
+/* 4. Zoom a la imagen (solo cuando se hace hover en la tarjeta) */
+.animated-card:hover .card-img-top {
+    transform: scale(1.1);
+}
+
+/* 5. Base del Badge de Puntuación (La banderita V) */
+.animated-card .score-badge {
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto rebote */
+    transform-origin: top right;
+}
+
+/* 6. Efecto "Pop" del Badge de Puntuación */
+.animated-card:hover .score-badge {
+    transform: scale(1.1) translateY(5px);
+}
