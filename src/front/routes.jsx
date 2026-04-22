@@ -6,11 +6,11 @@ import {
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-import { Single } from "./pages/Single";
 import { Demo } from "./pages/Demo";
 import { Signup } from "./pages/Signup";
 import { Login } from "./pages/Login";
 import { AdminDashboard } from "./pages/AdminDashboard";
+import { Single } from "./pages/Single"; // Singleview de los restaurentes
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -30,12 +30,13 @@ export const router = createBrowserRouter(
         Al quitar el "/" inicial, le decimos que estos paths se suman al padre.
         Ejemplo: el padre es "/" + el hijo es "login" = "/login"
       */}
-      <Route path="single/:theId" element={<Single />} />
+      <Route path="restaurant/:id" element={<Single />} />
+
+      {/* Otras rutas de la aplicación */}
       <Route path="demo" element={<Demo />} />
       <Route path="signup" element={<Signup />} />
       <Route path="login" element={<Login />} />
       <Route path="admin" element={<AdminDashboard />} />
-
     </Route>
   )
 );

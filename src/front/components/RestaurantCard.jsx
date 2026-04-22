@@ -1,9 +1,11 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom"; // hook de navegacion
 // Asegúrate de que tu index.css se esté importando en tu main.jsx o layout.jsx
 // En 4Geeks normalmente ya está configurado.
 
 export const RestaurantCard = ({ restaurant }) => {
+    const navigate = useNavigate(); // 2. Inicializamos el hook para poder navegar
     // Lógica dinámica de Puntuación y Colores
     const getRankingConfig = (score) => {
         if (score >= 80) return { label: "Excelente", color: "#198754", shadow: "rgba(25, 135, 84, 0.3)" };
@@ -16,6 +18,7 @@ export const RestaurantCard = ({ restaurant }) => {
 
     return (
         <div 
+            onClick={() => navigate(`/restaurant/${restaurant.id}`)}
             // Agregamos la clase 'animated-card' aquí
             className="card h-100 rounded-4 overflow-hidden position-relative bg-white animated-card"
             style={{ 
@@ -25,6 +28,7 @@ export const RestaurantCard = ({ restaurant }) => {
                 "--hover-shadow": config.shadow,
                 "--hover-border": config.color
             }}
+            
         >
             {/* Bookmark en V (Puntuación) con clase 'score-badge' */}
             <div 

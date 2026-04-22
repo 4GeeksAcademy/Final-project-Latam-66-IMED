@@ -165,3 +165,15 @@ def delete_restaurant(restaurant_id):
     db.session.commit()
 
     return jsonify({"msg": "Restaurante eliminado correctamente"}), 200
+
+# Traer un solo restaurante por ID
+@api.route('/restaurants/<int:restaurant_id>', methods=['GET'])
+def get_single_restaurant(restaurant_id):
+    # Buscamos en la base de datos por la llave primaria
+    restaurant = Restaurant.query.get(restaurant_id)
+    
+    if restaurant is None:
+        return jsonify({"msg": "Restaurante no encontrado"}), 404
+    
+    # Retornamos el restaurante serializado
+    return jsonify(restaurant.serialize()), 200
