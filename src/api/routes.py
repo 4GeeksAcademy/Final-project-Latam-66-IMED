@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, Blueprint
-from api.models import db, User, Restaurant
+from api.models import db, User, Restaurant, Review, Favorite, PlaceToVisit
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token
@@ -173,13 +173,103 @@ def delete_restaurant(restaurant_id):
     return jsonify({"msg": "Restaurante eliminado correctamente"}), 200
 
 # Traer un solo restaurante por ID
+
+
 @api.route('/restaurants/<int:restaurant_id>', methods=['GET'])
 def get_single_restaurant(restaurant_id):
     # Buscamos en la base de datos por la llave primaria
     restaurant = Restaurant.query.get(restaurant_id)
-    
+
     if restaurant is None:
         return jsonify({"msg": "Restaurante no encontrado"}), 404
-    
+
     # Retornamos el restaurante serializado
     return jsonify(restaurant.serialize()), 200
+
+# ==========================================
+# RUTAS DE PERFIL DE USUARIO
+# ==========================================
+
+
+@api.route('/profile', methods=['GET'])
+@jwt_required()  # Protegemos la ruta: solo entran usuarios con token
+def get_user_profile():
+    # 1. Identificamos quién es el usuario a través de su token
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    # 2. Lógica de Negocio: Nivel de Usuario
+    review_count = len(user.reviews)
+    level = "Novato"
+    if review_count >= 15:
+        level = "Crítico experto"
+    elif review_count >= 5:
+        level = "Foodie"
+
+    # 3. Lógica de Negocio: Insignias
+    badges = []
+    if review_count >= 10:
+        badges.append("Top Reviewer ⭐")
+    if len(user.favorites) >= 5:
+        badges.append("Cazador de Joyas ❤️")
+
+    # 4. Devolvemos todo estructurado para React
+    return jsonify({
+        "user_info": user.serialize(),
+        "level": level,
+        "badges": badges,
+        # Usamos List Comprehensions para transformar las listas de objetos en JSON
+        "reviews": [review.serialize() for review in user.reviews],
+        "favorites": [fav.serialize() for fav in user.favorites],
+        "places_to_visit": [place.serialize() for place in user.places_to_visit]
+    }), 200
+
+
+
+# RUTAS PARA EDITAR EL PERFIL
+@api.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_user_profile():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    body = request.get_json()
+
+    try:
+        # Email (Validación normal)
+        if "email" in body:
+            user.email = body["email"]
+        
+        # Username (LA SOLUCIÓN AL ERROR 500)
+        if "username" in body:
+            new_val = body["username"].strip() if body["username"] else ""
+            if new_val == "" or new_val == "@usuario": # Si es el default o vacío
+                user.username = None
+            else:
+                # Buscamos si ALGUIEN MÁS tiene ese nombre
+                check = User.query.filter(User.username == new_val, User.id != user.id).first()
+                if check:
+                    return jsonify({"msg": "Nombre de usuario ya ocupado"}), 400
+                user.username = new_val
+
+        # Otros campos
+        if "full_name" in body: user.full_name = body["full_name"]
+        if "country" in body: user.country = body["country"]
+        if "city" in body: user.city = body["city"]
+        if "age" in body: user.age = body["age"]
+        if "bio" in body: user.bio = body["bio"]
+        if "profile_picture" in body: user.profile_picture = body["profile_picture"]
+
+        db.session.commit()
+        return jsonify({"msg": "Perfil actualizado", "user_info": user.serialize()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        # Mira tu terminal negra de Flask, ahí verás el error real impreso
+        print(f"--- ERROR CRÍTICO ---: {str(e)}")
+        return jsonify({"msg": "Error de duplicado en la base de datos"}), 500
