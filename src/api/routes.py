@@ -85,7 +85,7 @@ def get_restaurants():
     return jsonify(result), 200
 
 
-# CREAR (POST)
+# CREAR restaurante (POST)
 @api.route('/restaurants', methods=['POST'])
 @jwt_required()  # <--- 1. Exige que el usuario envíe un token válido
 def create_restaurant():
@@ -106,8 +106,9 @@ def create_restaurant():
         image_url=body.get("image_url"),
         food_type=body.get("food_type"),
         cuisine_origin=body.get("cuisine_origin"),
-        description=body.get("description"),
-        city=body.get("city")
+        city=body.get("city"),
+        country=body.get("country"),
+        description=body.get("description")
     )
     db.session.add(new_restaurant)
     db.session.commit()
@@ -115,7 +116,7 @@ def create_restaurant():
     return jsonify({"msg": "Restaurante creado exitosamente", "restaurant": new_restaurant.serialize()}), 201
 
 
-# EDITAR (PUT)
+# EDITAR restaurante (PUT)
 @api.route('/restaurants/<int:restaurant_id>', methods=['PUT'])
 @jwt_required()
 def update_restaurant(restaurant_id):
@@ -142,6 +143,8 @@ def update_restaurant(restaurant_id):
         restaurant.description = body["description"]
     if "city" in body:
         restaurant.city = body["city"]
+    if "country" in body:
+        restaurant.country = body["country"]
 
     db.session.commit()
     return jsonify({"msg": "Restaurante actualizado", "restaurant": restaurant.serialize()}), 200

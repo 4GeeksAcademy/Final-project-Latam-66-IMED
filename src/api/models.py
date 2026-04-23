@@ -53,7 +53,10 @@ class Restaurant(db.Model):
     food_type = db.Column(db.String(80), nullable=False) # ej: Sushi, Pasta
     cuisine_origin = db.Column(db.String(80), nullable=False) # ej: Japonesa, Italiana
     description = db.Column(db.Text, nullable=True)
-    city = db.Column(db.String(80), nullable=False)
+    city = db.Column(db.String(80), nullable=False) # ej: caracas, tokio, bogota
+
+    # Nueva columna para pais
+    country = db.Column(db.String(80), nullable=True) # ej: japon, mexico, venezuela
     
     def serialize(self):
         return {
@@ -64,7 +67,8 @@ class Restaurant(db.Model):
             "food_type": self.food_type,
             "cuisine_origin": self.cuisine_origin,
             "description": self.description,
-            "city": self.city
+            "city": self.city,
+            "country": self.country
         }
     
 # ==========================================

@@ -1,11 +1,10 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom"; // hook de navegacion
-// Asegúrate de que tu index.css se esté importando en tu main.jsx o layout.jsx
-// En 4Geeks normalmente ya está configurado.
 
 export const RestaurantCard = ({ restaurant }) => {
-    const navigate = useNavigate(); // 2. Inicializamos el hook para poder navegar
+    const navigate = useNavigate(); // Inicializamos el hook para poder navegar
+    
     // Lógica dinámica de Puntuación y Colores
     const getRankingConfig = (score) => {
         if (score >= 80) return { label: "Excelente", color: "#198754", shadow: "rgba(25, 135, 84, 0.3)" };
@@ -14,21 +13,31 @@ export const RestaurantCard = ({ restaurant }) => {
         return { label: "Malo", color: "#dc3545", shadow: "rgba(220, 53, 69, 0.3)" };
     };
 
+    // TRUCO FRONTEND: Deducir el país temporalmente hasta que lo agreguemos a la Base de Datos
+    const getCountryByCity = (city) => {
+        const cityMap = {
+            "Caracas": "Venezuela",
+            "CDMX": "México",
+            "Lima": "Perú",
+            "Madrid": "España",
+            "Bangkok": "Tailandia"
+        };
+        return cityMap[city] || "País Desconocido";
+    };
+
     const config = getRankingConfig(restaurant.score);
+    const countryName = restaurant.country || getCountryByCity(restaurant.city);
 
     return (
         <div 
             onClick={() => navigate(`/restaurant/${restaurant.id}`)}
-            // Agregamos la clase 'animated-card' aquí
             className="card h-100 rounded-4 overflow-hidden position-relative bg-white animated-card"
             style={{ 
-                border: `3px solid ${config.color}40`, // Color base con transparencia
+                border: `3px solid ${config.color}40`, 
                 cursor: "pointer",
-                // ¡MAGIA CSS! Pasamos variables dinámicas al archivo index.css
                 "--hover-shadow": config.shadow,
                 "--hover-border": config.color
             }}
-            
         >
             {/* Bookmark en V (Puntuación) con clase 'score-badge' */}
             <div 
@@ -55,10 +64,12 @@ export const RestaurantCard = ({ restaurant }) => {
             </div>
 
             <div className="card-body d-flex flex-column p-3">
-                {/* Tres Iconos */}
-                <div className="d-flex gap-3 mb-2 text-secondary small fw-semibold">
-                    <span><i className="fas fa-flag me-1"></i> 🇻🇪</span>
-                    <span><i className="fas fa-utensils me-1"></i> {restaurant.food_type}</span>
+                
+                {/* MODIFICACIÓN: Iconos de País, Ciudad y Tipo de Comida */}
+                <div className="d-flex gap-3 mb-2 text-secondary small fw-semibold flex-wrap">
+                    <span><i className="fas fa-globe-americas me-1 text-primary"></i> {countryName}</span>
+                    <span><i className="fas fa-map-marker-alt me-1 text-danger"></i> {restaurant.city || "Ciudad"}</span>
+                    <span><i className="fas fa-utensils me-1 text-success"></i> {restaurant.food_type}</span>
                 </div>
 
                 {/* Nombre del Restaurante */}
