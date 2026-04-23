@@ -11,11 +11,12 @@ import { Signup } from "./pages/Signup";
 import { Login } from "./pages/Login";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Single } from "./pages/Single"; // Singleview de los restaurentes
+import { Profile } from "./pages/Profile";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
-    
+
     // Root Route: All navigation will start from here.
     // El Layout envuelve a todos sus hijos y les proporciona el Navbar y el Footer
     <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
@@ -25,7 +26,7 @@ export const router = createBrowserRouter(
         muestra el componente Home por defecto dentro del Outlet".
       */}
       <Route index element={<Home />} />
-      
+
       {/* CORRECCIÓN 2: Rutas relativas.
         Al quitar el "/" inicial, le decimos que estos paths se suman al padre.
         Ejemplo: el padre es "/" + el hijo es "login" = "/login"
@@ -37,6 +38,7 @@ export const router = createBrowserRouter(
       <Route path="signup" element={<Signup />} />
       <Route path="login" element={<Login />} />
       <Route path="admin" element={<AdminDashboard />} />
+      <Route path="perfil" element={<Profile />} />
     </Route>
   )
 );
