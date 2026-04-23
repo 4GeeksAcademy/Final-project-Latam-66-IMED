@@ -105,6 +105,7 @@ def create_restaurant():
         name=body.get("name"),
         image_url=body.get("image_url"),
         food_type=body.get("food_type"),
+        score=body.get("score", 0), # Si no viene score, pone 0 por defecto
         cuisine_origin=body.get("cuisine_origin"),
         city=body.get("city"),
         country=body.get("country"),
@@ -145,6 +146,8 @@ def update_restaurant(restaurant_id):
         restaurant.city = body["city"]
     if "country" in body:
         restaurant.country = body["country"]
+    if "score" in body:
+        restaurant.score = body["score"]
 
     db.session.commit()
     return jsonify({"msg": "Restaurante actualizado", "restaurant": restaurant.serialize()}), 200

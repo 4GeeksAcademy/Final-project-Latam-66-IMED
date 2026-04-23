@@ -58,7 +58,7 @@ export const Home = () => {
                 {/* TÍTULO Y CONTADOR CIRCULAR */}
                 <div className="d-flex align-items-center mb-4">
                     <h2 className="fw-bold mb-0" style={{ color: "#333" }}>
-                        Destacados en <span style={{ color: "#D32F2F" }}>{searchCountry || "El Mundo"}</span>
+                        Destacados en <span style={{ color: "#D32F2F" }}>{searchCountry || "El Mundo"} ({searchCity || "Todas las Ciudades"})</span>
                     </h2>
                     {/* El Contador Circular */}
                     <div 

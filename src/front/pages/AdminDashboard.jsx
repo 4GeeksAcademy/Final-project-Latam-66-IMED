@@ -7,25 +7,30 @@ export const AdminDashboard = () => {
     const navigate = useNavigate(); 
 
     const initialFormState = {
-        name: "", image_url: "", food_type: "", cuisine_origin: "", 
-        country: "", city: "", description: "" // <-- Agregado country
+        name: "", image_url: "", score: 0, food_type: "", cuisine_origin: "", 
+        country: "", city: "", description: "" 
     };
 
     const [formData, setFormData] = useState(initialFormState);
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     
-    // Estados para Filtros
+    // Estados para Filtros del Dashboard
     const [filterName, setFilterName] = useState("");
     const [filterType, setFilterType] = useState("");
     const [filterCity, setFilterCity] = useState("");
     const [filterCountry, setFilterCountry] = useState("");
 
-    // Estados para Carga Masiva (Excel/Sheets)
+    // Estados para Carga y Modificación Masiva (Excel/Sheets)
     const [showBulk, setShowBulk] = useState(false);
     const [bulkText, setBulkText] = useState("");
     const [bulkPreview, setBulkPreview] = useState([]);
     const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
+    const [defaultBulkScore, setDefaultBulkScore] = useState(0);
+
+    // Estados para la Eliminación Masiva (Checkboxes) 
+    const [selectedIds, setSelectedIds] = useState([]); 
+    const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
     // PROTECCIÓN Y CARGA DE DATOS
     useEffect(() => {
@@ -54,7 +59,7 @@ export const AdminDashboard = () => {
         }
     };
 
-    // LÓGICA DE FILTROS AVANZADA (Con protección de nulos)
+    // LÓGICA DE FILTROS AVANZADA
     const restaurantsList = store.restaurants || [];
     const filtered = restaurantsList.filter(r =>
         (r.name || "").toLowerCase().includes(filterName.toLowerCase()) &&
@@ -62,6 +67,33 @@ export const AdminDashboard = () => {
         (r.city || "").toLowerCase().includes(filterCity.toLowerCase()) &&
         (r.country || "").toLowerCase().includes(filterCountry.toLowerCase())
     );
+
+    // ====================================================================
+    // 🌟 CONTROLADORES DE LOS BOTONES SUPERIORES (Corrección de choques)
+    // ====================================================================
+    const handleCreateClick = () => {
+        // Si el formulario ya está abierto y NO estamos editando, significa que estábamos creando. Lo cerramos.
+        if (showForm && !editingId) {
+            setShowForm(false);
+        } else {
+            // Cerramos el panel masivo si estaba abierto, limpiamos el form y abrimos creación
+            setShowBulk(false);
+            setFormData(initialFormState);
+            setEditingId(null);
+            setShowForm(true);
+        }
+    };
+
+    const handleBulkClick = () => {
+        // Si el masivo está abierto, lo cerramos
+        if (showBulk) {
+            setShowBulk(false);
+        } else {
+            // Si estaba cerrado, nos aseguramos de cerrar el form individual y abrimos masivo
+            setShowForm(false);
+            setShowBulk(true);
+        }
+    };
 
     // MANEJO DE FORMULARIO INDIVIDUAL
     const handleChange = (e) => {
@@ -79,10 +111,7 @@ export const AdminDashboard = () => {
         try {
             const resp = await fetch(url, {
                 method: method,
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify(formData)
             });
 
@@ -107,95 +136,124 @@ export const AdminDashboard = () => {
         }
     };
 
-    // LÓGICA DE CARGA MASIVA (Copiar y Pegar desde Excel)
+    // LÓGICA DE CARGA MASIVA (Excel)
     useEffect(() => {
         if (!bulkText.trim()) {
             setBulkPreview([]);
             return;
         }
-        // Separamos por filas (\n) y luego por columnas (\t del tabulador de Excel)
         const rows = bulkText.split('\n');
         const parsedData = rows.map(row => {
             const cols = row.split('\t');
+            const rowId = cols[0]?.trim();
+            const rowScore = cols[3]?.trim();
             return {
-                name: cols[0]?.trim() || "",
-                image_url: cols[1]?.trim() || "",
-                food_type: cols[2]?.trim() || "",
-                cuisine_origin: cols[3]?.trim() || "",
-                country: cols[4]?.trim() || "",
-                city: cols[5]?.trim() || "",
-                description: cols[6]?.trim() || ""
+                id: rowId !== "" ? rowId : null, 
+                name: cols[1]?.trim() || "",
+                image_url: cols[2]?.trim() || "",
+                score: rowScore !== "" && rowScore !== undefined ? parseInt(rowScore) : parseInt(defaultBulkScore),
+                food_type: cols[4]?.trim() || "",
+                cuisine_origin: cols[5]?.trim() || "",
+                country: cols[6]?.trim() || "",
+                city: cols[7]?.trim() || "",
+                description: cols[8]?.trim() || ""
             };
-        }).filter(r => r.name !== ""); // Ignoramos filas vacías sin nombre
-
+        }).filter(r => r.name !== ""); 
         setBulkPreview(parsedData);
-    }, [bulkText]);
+    }, [bulkText, defaultBulkScore]); 
 
-    // Funcion para mandar un monton de restaurantes al backend en paralelo
     const handleBulkSubmit = async () => {
         if (bulkPreview.length === 0) return;
         setIsSubmittingBulk(true);
         const token = sessionStorage.getItem("token");
 
         try {
-            // 1. Preparamos todas las peticiones
-            const promises = bulkPreview.map(rest => 
-                fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants`, {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json", 
-                        "Authorization": `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(rest)
-                })
-            );
+            const promises = bulkPreview.map(rest => {
+                const isUpdate = rest.id !== null;
+                const url = isUpdate 
+                    ? `${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${rest.id}` 
+                    : `${import.meta.env.VITE_BACKEND_URL}/api/restaurants`;
+                const method = isUpdate ? "PUT" : "POST";
+                const { id, ...bodyData } = rest;
 
-            // 2. Esperamos a que todas terminen
+                return fetch(url, {
+                    method: method,
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify(bodyData)
+                });
+            });
+
             const responses = await Promise.all(promises);
-
-            // 3. ¡EL TRUCO SENIOR! Filtramos las que NO fueron exitosas (resp.ok es falso para 401, 404, 500)
             const failedResponses = responses.filter(resp => !resp.ok);
 
             if (failedResponses.length > 0) {
-                // Si hubo fallos, revisamos el código del primero para avisarle al usuario
                 const errorCode = failedResponses[0].status;
-                if (errorCode === 401) {
-                    alert("Error 401: Tu sesión ha expirado o el Token es inválido. Por favor, cierra sesión y vuelve a iniciar sesión.");
-                } else {
-                    alert(`Error del servidor (${errorCode}). No se pudieron guardar todos los restaurantes.`);
-                }
+                if (errorCode === 401) alert("Error 401: Sesión expirada.");
+                else alert(`Error (${errorCode}). Revisar consola.`);
             } else {
-                // Solo si el arreglo de fallos está vacío, cantamos victoria
-                alert(`¡Éxito! Se han guardado ${bulkPreview.length} restaurantes en la Base de Datos.`);
+                alert(`¡Éxito! Se han procesado ${bulkPreview.length} restaurantes.`);
                 setBulkText("");
                 setShowBulk(false);
-                fetchAdminRestaurants(); // Recargamos la tabla visualmente
+                fetchAdminRestaurants(); 
             }
-
         } catch (error) {
-            console.error("Error en carga masiva:", error);
-            alert("Error de red. Asegúrate de que el servidor Backend esté corriendo.");
+            console.error("Error masivo:", error);
+            alert("Error de red.");
         } finally {
             setIsSubmittingBulk(false);
         }
     };
 
 
-    // ACCIONES DE TABLA
-    const handleEditClick = (restaurant) => {
-        setFormData({
-            name: restaurant.name,
-            image_url: restaurant.image_url || "",
-            food_type: restaurant.food_type,
-            cuisine_origin: restaurant.cuisine_origin,
-            country: restaurant.country || "", // <-- Agregado
-            city: restaurant.city,
-            description: restaurant.description || ""
-        });
-        setEditingId(restaurant.id);
-        setShowBulk(false); // Cerramos el masivo por si acaso
-        setShowForm(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+    // LÓGICA DE LOS CHECKBOXES Y ELIMINACIÓN MASIVA
+    const handleSelectOne = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            const allVisibleIds = filtered.map(r => r.id);
+            setSelectedIds(allVisibleIds);
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return; 
+        if (!window.confirm(`¿Estás seguro de eliminar ${selectedIds.length} restaurantes de forma permanente?`)) return;
+
+        setIsDeletingBulk(true);
+        const token = sessionStorage.getItem("token");
+
+        try {
+            const deletePromises = selectedIds.map(id => 
+                fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+            );
+
+            const responses = await Promise.all(deletePromises);
+            const failedResponses = responses.filter(resp => !resp.ok);
+
+            if (failedResponses.length > 0) {
+                alert(`Error. No se pudieron eliminar ${failedResponses.length} restaurantes.`);
+            } else {
+                alert(`¡Éxito! Limpiaste ${selectedIds.length} restaurantes.`);
+                setSelectedIds([]);
+                fetchAdminRestaurants();
+            }
+        } catch (error) {
+            console.error("Error en eliminación masiva:", error);
+            alert("Ocurrió un error de conexión.");
+        } finally {
+            setIsDeletingBulk(false);
+        }
     };
 
     const handleDelete = async (id) => {
@@ -209,9 +267,9 @@ export const AdminDashboard = () => {
 
                 if (resp.ok) {
                     dispatch({ type: "delete_restaurant", payload: id });
+                    setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
                 } else {
-                    const errorData = await resp.json();
-                    alert(`Error: ${errorData.msg || "No se pudo eliminar"}`);
+                    alert(`Error al eliminar`);
                 }
             } catch (error) {
                 console.error("Error eliminando:", error);
@@ -219,56 +277,83 @@ export const AdminDashboard = () => {
         }
     };
 
+    const handleEditClick = (restaurant) => {
+        setFormData({
+            name: restaurant.name, image_url: restaurant.image_url || "", score: restaurant.score || 0,
+            food_type: restaurant.food_type, cuisine_origin: restaurant.cuisine_origin,
+            country: restaurant.country || "", city: restaurant.city, description: restaurant.description || ""
+        });
+        setEditingId(restaurant.id);
+        setShowBulk(false); 
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const isAllSelected = filtered.length > 0 && selectedIds.length === filtered.length;
+
     return (
-        <div className="container-fluid bg-fc-dark text-fc-light min-vh-100 p-4" style={{ backgroundColor: "#1e1e1e" }}>
+        <div className="container-fluid min-vh-100 p-4" style={{ backgroundColor: "#1e1e1e", color: "#f8f9fa" }}>
             
             {/* Header y Contadores Destacados */}
             <div className="row align-items-center mb-4 bg-dark p-4 rounded-4 shadow">
                 <div className="col-12 col-md-6 mb-3 mb-md-0">
-                    <h1 className="text-fc-red fw-bold mb-2" style={{ color: "#D32F2F" }}>Panel de Control</h1>
+                    <h1 className="fw-bold mb-2" style={{ color: "#D32F2F" }}>Panel de Control</h1>
                     <div className="d-flex gap-3">
-                        <span className="badge bg-secondary fs-6 py-2 px-3">
+                        <span className="badge fs-6 py-2 px-3" style={{ backgroundColor: "#4a4a4a", color: "#ffffff" }}>
                             Total Base de Datos: {restaurantsList.length}
                         </span>
-                        <span className="badge fs-6 py-2 px-3" style={{ backgroundColor: "#D32F2F" }}>
+                        <span className="badge fs-6 py-2 px-3" style={{ backgroundColor: "#D32F2F", color: "#ffffff" }}>
                             Visibles con Filtro: {filtered.length}
                         </span>
                     </div>
                 </div>
                 <div className="col-12 col-md-6 text-md-end d-flex gap-2 justify-content-md-end flex-wrap">
+                    {/* Botón Masivo arreglado */}
                     <button 
-                        className="btn btn-outline-light fw-bold"
-                        onClick={() => { setShowForm(false); setShowBulk(!showBulk); }}
+                        className="btn btn-outline-light fw-bold" 
+                        onClick={handleBulkClick}
                     >
-                        {showBulk ? "Ocultar Carga Masiva" : "📋 Agregar Múltiples"}
+                        {showBulk ? "Ocultar Carga Masiva" : "📋 Carga / Edición Masiva"}
                     </button>
-                    <button
-                        className="btn fw-bold text-white" style={{ backgroundColor: "#D32F2F" }}
-                        onClick={() => {
-                            setFormData(initialFormState);
-                            setEditingId(null);
-                            setShowBulk(false);
-                            setShowForm(!showForm);
-                        }}
+                    {/* Botón Individual arreglado */}
+                    <button 
+                        className="btn fw-bold text-white" 
+                        style={{ backgroundColor: "#D32F2F" }} 
+                        onClick={handleCreateClick}
                     >
-                        {showForm ? "Cerrar Formulario" : "+ Crear Restaurante"}
+                        {showForm && !editingId ? "Cerrar Formulario" : "+ Crear Individual"}
                     </button>
                 </div>
             </div>
 
-            {/* FORMULARIO DE CARGA MASIVA (EXCEL) */}
+            {/* FORMULARIO DE CARGA MASIVA (EXCEL) - Textos muy legibles */}
             {showBulk && (
                 <div className="card bg-dark text-light border-secondary mb-4 p-4 shadow rounded-4 border-2" style={{ borderColor: "#D32F2F !important" }}>
-                    <h3 className="text-warning mb-3"><i className="fas fa-bolt me-2"></i>Carga Masiva (Desde Excel/Sheets)</h3>
-                    <p className="text-muted small">
-                        Copia las celdas desde tu hoja de cálculo y pégalas en el cuadro de abajo. <br/>
-                        <b>Orden estricto de columnas:</b> Nombre | URL Imagen | Tipo de Comida | Origen | País | Ciudad | Descripción
-                    </p>
+                    <h3 className="text-warning fw-bold mb-3"><i className="fas fa-bolt me-2"></i>Edición y Carga Masiva (Excel)</h3>
                     
+                    <div className="alert alert-secondary text-dark border-0 mb-4 fw-semibold">
+                        <p className="mb-2"><b>Instrucciones:</b> Copia y pega desde tu Excel con este orden exacto de columnas:</p>
+                        <p className="mb-0 font-monospace text-danger bg-light p-2 rounded">
+                            ID (Dejar vacío para crear) | Nombre | URL Imagen | Score | Tipo Comida | Origen | País | Ciudad | Descripción
+                        </p>
+                    </div>
+                    
+                    <div className="mb-3 d-flex align-items-center gap-3">
+                        <label className="fw-bold text-light text-nowrap">Score (Rating) por Defecto:</label>
+                        <input 
+                            type="number" 
+                            className="form-control bg-secondary text-white fw-bold border-0" 
+                            style={{ width: "100px" }}
+                            value={defaultBulkScore} 
+                            onChange={(e) => setDefaultBulkScore(e.target.value)} 
+                        />
+                        <span className="text-light">Se aplicará si dejas la columna de score vacía en el Excel.</span>
+                    </div>
+
                     <textarea 
-                        className="form-control bg-secondary text-light border-0 mb-3" 
-                        rows="5" 
-                        placeholder="Pega tus datos de Excel aquí..."
+                        className="form-control bg-secondary text-white fw-bold border-0 mb-3 font-monospace" 
+                        rows="6" 
+                        placeholder="Pega tus datos aquí..."
                         value={bulkText}
                         onChange={(e) => setBulkText(e.target.value)}
                     ></textarea>
@@ -276,78 +361,90 @@ export const AdminDashboard = () => {
                     {/* Tabla de Previsualización */}
                     {bulkPreview.length > 0 && (
                         <div className="mb-3">
-                            <h5 className="text-success mb-2">Previsualización ({bulkPreview.length} filas listas para subir)</h5>
+                            <h5 className="text-success fw-bold mb-2">Previsualización ({bulkPreview.length} filas listas para procesar)</h5>
                             <div className="table-responsive" style={{ maxHeight: "300px", overflowY: "auto" }}>
                                 <table className="table table-sm table-dark table-striped">
                                     <thead>
                                         <tr>
-                                            <th>Nombre</th><th>Tipo</th><th>País</th><th>Ciudad</th>
+                                            <th>Acción</th><th>Nombre</th><th>Score</th><th>Tipo</th><th>País</th><th>Ciudad</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {bulkPreview.map((r, i) => (
                                             <tr key={i}>
-                                                <td>{r.name}</td><td>{r.food_type}</td><td>{r.country}</td><td>{r.city}</td>
+                                                <td>
+                                                    {r.id 
+                                                        ? <span className="badge bg-warning text-dark">📝 Actualizar (ID: {r.id})</span> 
+                                                        : <span className="badge bg-success">✨ Nuevo</span>}
+                                                </td>
+                                                <td>{r.name}</td>
+                                                <td>{r.score}</td>
+                                                <td>{r.food_type}</td>
+                                                <td>{r.country}</td>
+                                                <td>{r.city}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                             <button 
-                                className="btn btn-success mt-2 fw-bold" 
+                                className="btn btn-success mt-3 fw-bold px-4" 
                                 onClick={handleBulkSubmit}
                                 disabled={isSubmittingBulk}
                             >
-                                {isSubmittingBulk ? "Guardando en BD..." : `Subir ${bulkPreview.length} Restaurantes`}
+                                {isSubmittingBulk ? "Procesando en BD..." : `Procesar ${bulkPreview.length} Restaurantes`}
                             </button>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* FORMULARIO INDIVIDUAL */}
+            {/* FORMULARIO INDIVIDUAL - Cero text-muted, todo text-light */}
             {showForm && (
                 <div className="card bg-dark text-light border-secondary mb-4 p-4 shadow rounded-4">
-                    <h3 className="mb-4" style={{ color: "#D32F2F" }}>{editingId ? "Editar Restaurante" : "Nuevo Restaurante"}</h3>
+                    <h3 className="mb-4 fw-bold" style={{ color: "#D32F2F" }}>{editingId ? "Editar Restaurante" : "Nuevo Restaurante"}</h3>
                     <form onSubmit={handleSubmit}>
                         <div className="row g-3">
                             <div className="col-md-6">
-                                <label className="form-label fw-bold">Nombre</label>
-                                <input type="text" name="name" className="form-control bg-secondary text-light border-0" value={formData.name} onChange={handleChange} required />
+                                <label className="form-label text-light fs-8 fw-bold">Nombre</label>
+                                <input type="text" name="name" className="form-control bg-secondary text-white fw-bold border-0" value={formData.name} onChange={handleChange} required />
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label fw-bold">URL de la Imagen</label>
-                                <input type="text" name="image_url" className="form-control bg-secondary text-light border-0" value={formData.image_url} onChange={handleChange} />
+                                <label className="form-label text-light fs-8 fw-bold">URL de la Imagen</label>
+                                <input type="text" name="image_url" className="form-control bg-secondary text-white fw-bold border-0" value={formData.image_url} onChange={handleChange} />
                             </div>
-                            <div className="col-md-6">
-                                <label className="form-label  fw-bold">Tipo de Comida</label>
-                                <input type="text" name="food_type" className="form-control bg-secondary text-light border-0" placeholder="Ej: Pasta, Sushi" value={formData.food_type} onChange={handleChange} required />
+                            <div className="col-md-4">
+                                <label className="form-label text-light fs-8 fw-bold">Score (Rating 0-100)</label>
+                                <input type="number" name="score" className="form-control bg-secondary text-white fw-bold border-0" value={formData.score} onChange={handleChange} required />
                             </div>
-                            <div className="col-md-6">
-                                <label className="form-label  fw-bold">Origen (Cocina)</label>
-                                <input type="text" name="cuisine_origin" className="form-control bg-secondary text-light border-0" placeholder="Ej: Italiana" value={formData.cuisine_origin} onChange={handleChange} required />
+                            <div className="col-md-4">
+                                <label className="form-label text-light fs-8 fw-bold">Tipo de Comida</label>
+                                <input type="text" name="food_type" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Pasta, Sushi" value={formData.food_type} onChange={handleChange} required />
+                            </div>
+                            <div className="col-md-4">
+                                <label className="form-label text-light fs-8 fw-bold">Origen (Cocina)</label>
+                                <input type="text" name="cuisine_origin" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Italiana" value={formData.cuisine_origin} onChange={handleChange} required />
                             </div>
                             
-                            {/* País antes que Ciudad */}
                             <div className="col-md-6">
-                                <label className="form-label fw-bold">País</label>
-                                <input type="text" name="country" className="form-control bg-secondary text-light border-0" placeholder="Ej: Venezuela" value={formData.country} onChange={handleChange} required />
+                                <label className="form-label text-light fs-8 fw-bold">País</label>
+                                <input type="text" name="country" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Venezuela" value={formData.country} onChange={handleChange} required />
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label fw-bold">Ciudad</label>
-                                <input type="text" name="city" className="form-control bg-secondary text-light border-0" placeholder="Ej: Caracas" value={formData.city} onChange={handleChange} required />
+                                <label className="form-label text-light fs-8 fw-bold">Ciudad</label>
+                                <input type="text" name="city" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Caracas" value={formData.city} onChange={handleChange} required />
                             </div>
                             
                             <div className="col-12">
-                                <label className="form-label fw-bold">Descripción</label>
-                                <textarea name="description" className="form-control bg-secondary text-light border-0" rows="3" value={formData.description} onChange={handleChange}></textarea>
+                                <label className="form-label text-light fs-8 fw-bold">Descripción</label>
+                                <textarea name="description" className="form-control bg-secondary text-white fw-bold border-0" rows="3" value={formData.description} onChange={handleChange}></textarea>
                             </div>
                         </div>
                         <div className="mt-4">
-                            <button type="submit" className="btn text-white me-2 fw-bold" style={{ backgroundColor: "#D32F2F" }}>
+                            <button type="submit" className="btn text-white me-3 px-4 py-2 fw-bold fs-8" style={{ backgroundColor: "#D32F2F" }}>
                                 {editingId ? "Guardar Cambios" : "Crear Restaurante"}
                             </button>
-                            <button type="button" className="btn btn-outline-light" onClick={() => setShowForm(false)}>
+                            <button type="button" className="btn btn-outline-light px-4 py-2 fw-bold fs-8" onClick={() => setShowForm(false)}>
                                 Cancelar
                             </button>
                         </div>
@@ -355,14 +452,29 @@ export const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* BARRAS DE BÚSQUEDA Y FILTROS AMPLIADOS */}
+            {/* BARRAS DE BÚSQUEDA DEL PANEL */}
             <div className="row g-3 mb-4 bg-dark p-4 rounded-4 shadow-sm">
-                <h5 className="col-12 text-muted fw-bold mb-2"><i className="fas fa-search me-2"></i>Filtros del Panel</h5>
+                <div className="col-12 d-flex justify-content-between align-items-center mb-2">
+                    <h4 className="text-light fw-bold mb-0"><i className="fas fa-search me-2 text-primary"></i>Filtros del Panel</h4>
+                    
+                    {selectedIds.length > 0 && (
+                        <button 
+                            className="btn btn-danger fw-bold shadow fs-8 px-4"
+                            onClick={handleBulkDelete}
+                            disabled={isDeletingBulk}
+                        >
+                            {isDeletingBulk ? "Eliminando..." : (
+                                <><i className="fas fa-trash-alt me-2"></i>Eliminar Seleccionados ({selectedIds.length})</>
+                            )}
+                        </button>
+                    )}
+                </div>
+                
                 <div className="col-12 col-md-3">
-                    <input type="text" className="form-control border-0" placeholder="Buscar por nombre..." onChange={(e) => setFilterName(e.target.value)} />
+                    <input type="text" className="form-control fw-bold border-0" placeholder="Buscar por nombre..." onChange={(e) => setFilterName(e.target.value)} />
                 </div>
                 <div className="col-12 col-md-3">
-                    <select className="form-select border-0" onChange={(e) => setFilterType(e.target.value)}>
+                    <select className="form-select fw-bold border-0" onChange={(e) => setFilterType(e.target.value)}>
                         <option value="">Todos los Tipos</option>
                         {[...new Set(restaurantsList.map(r => r.food_type))].filter(Boolean).map((type, index) => (
                             <option key={index} value={type}>{type}</option>
@@ -370,7 +482,7 @@ export const AdminDashboard = () => {
                     </select>
                 </div>
                 <div className="col-12 col-md-3">
-                    <select className="form-select border-0" onChange={(e) => setFilterCountry(e.target.value)}>
+                    <select className="form-select fw-bold border-0" onChange={(e) => setFilterCountry(e.target.value)}>
                         <option value="">Todos los Países</option>
                         {[...new Set(restaurantsList.map(r => r.country))].filter(Boolean).map((c, index) => (
                             <option key={index} value={c}>{c}</option>
@@ -378,7 +490,7 @@ export const AdminDashboard = () => {
                     </select>
                 </div>
                 <div className="col-12 col-md-3">
-                    <select className="form-select border-0" onChange={(e) => setFilterCity(e.target.value)}>
+                    <select className="form-select fw-bold border-0" onChange={(e) => setFilterCity(e.target.value)}>
                         <option value="">Todas las Ciudades</option>
                         {[...new Set(restaurantsList.map(r => r.city))].filter(Boolean).map((c, index) => (
                             <option key={index} value={c}>{c}</option>
@@ -387,36 +499,57 @@ export const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* TABLA DE GESTIÓN */}
+            {/* TABLA DE GESTIÓN (Con Textos Súper Claros) */}
             <div className="table-responsive card bg-dark text-light border-0 rounded-4 shadow overflow-hidden">
-                <table className="table table-dark table-hover align-middle mb-0">
+                <table className="table table-dark table-hover align-middle mb-0 fs-8">
                     <thead style={{ backgroundColor: "#2c2c2c" }}>
-                        <tr style={{ color: "#D32F2F" }}>
-                            <th className="py-3 px-4">Nombre</th>
-                            <th>País</th>
-                            <th>Ciudad</th>
-                            <th>Tipo</th>
-                            <th>Score</th>
-                            <th className="text-end px-4">Acciones</th>
+                        <tr style={{ color: "#ff6b6b" }}>
+                            <th className="py-3 px-4 text-center" style={{ width: "50px" }}>
+                                <input 
+                                    type="checkbox" 
+                                    className="form-check-input border-secondary" 
+                                    style={{ transform: "scale(1.5)", cursor: "pointer" }}
+                                    checked={isAllSelected}
+                                    onChange={handleSelectAll}
+                                />
+                            </th>
+                            <th className="fw-bold">ID</th>
+                            <th className="fw-bold">Nombre</th>
+                            <th className="fw-bold">País</th>
+                            <th className="fw-bold">Ciudad</th>
+                            <th className="fw-bold">Tipo</th>
+                            <th className="fw-bold">Score</th>
+                            <th className="text-end px-4 fw-bold">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filtered.length === 0 ? (
-                            <tr><td colSpan="6" className="text-center py-5 text-muted">No hay restaurantes que coincidan con la búsqueda.</td></tr>
+                            <tr><td colSpan="8" className="text-center py-5 text-light fw-bold fs-8">No hay restaurantes que coincidan con la búsqueda.</td></tr>
                         ) : (
                             filtered.map(r => (
-                                <tr key={r.id}>
-                                    <td className="px-4 fw-semibold">{r.name}</td>
-                                    <td><span className="text-secondary"><i className="fas fa-globe-americas me-1"></i>{r.country || "N/A"}</span></td>
-                                    <td>{r.city}</td>
-                                    <td><span className="badge bg-secondary">{r.food_type}</span></td>
-                                    <td className="fw-bold text-warning">{r.score}</td>
+                                <tr key={r.id} className={selectedIds.includes(r.id) ? "bg-danger bg-opacity-25" : ""}>
+                                    <td className="px-4 text-center">
+                                        <input 
+                                            type="checkbox" 
+                                            className="form-check-input border-secondary"
+                                            style={{ transform: "scale(1.5)", cursor: "pointer" }}
+                                            checked={selectedIds.includes(r.id)}
+                                            onChange={() => handleSelectOne(r.id)}
+                                        />
+                                    </td>
+
+                                    <td className="text-info fw-bold">#{r.id}</td>
+                                    <td className="text-white fw-bold">{r.name}</td>
+                                    <td><span className="text-light"><i className="fas fa-globe-americas me-1 text-primary"></i>{r.country || "N/A"}</span></td>
+                                    <td className="text-light">{r.city}</td>
+                                    <td><span className="badge bg-primary fs-6">{r.food_type}</span></td>
+                                    <td className="fw-bold text-warning fs-8">{r.score}</td>
                                     <td className="text-end px-4">
-                                        <button className="btn btn-sm btn-outline-light me-2 rounded-pill px-3" onClick={() => handleEditClick(r)}>
+                                        <button className="btn btn-sm btn-light text-dark fw-bold me-2 rounded-pill px-3" onClick={() => handleEditClick(r)}>
                                             <i className="fas fa-edit me-1"></i> Editar
                                         </button>
-                                        <button className="btn btn-sm btn-outline-danger rounded-pill px-3" onClick={() => handleDelete(r.id)}>
-                                            <i className="fas fa-trash me-1"></i> Eliminar
+                                        <button className="btn btn-sm btn-danger fw-bold rounded-pill px-3" onClick={() => handleDelete(r.id)}>
+                                            <i className="fas fa-trash me-1"></i>
                                         </button>
                                     </td>
                                 </tr>
