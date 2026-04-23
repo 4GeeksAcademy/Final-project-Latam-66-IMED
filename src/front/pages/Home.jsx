@@ -5,7 +5,7 @@ import { RestaurantCard } from "../components/RestaurantCard";
 export const Home = () => {
     const { store, dispatch } = useGlobalReducer();
 
-    // 1. Estados de los filtros originales + Los 2 nuevos (City y Country)
+    // 1. Estados de los filtros
     const [searchTerm, setSearchTerm] = useState("");
     const [foodType, setFoodType] = useState("");
     const [origin, setOrigin] = useState("");
@@ -30,27 +30,23 @@ export const Home = () => {
         }
     }, []);
 
-    // 2. Lógica del Filtro Actualizada
-    const restaurantsToFilter = store.restaurants || [];
+    const restaurantsList = store.restaurants || [];
     
-    // Función temporal para predecir el país mientras actualizamos el backend
-    const getCountryFallback = (city) => {
-        const cityMap = { "Caracas": "Venezuela", "CDMX": "México", "Lima": "Perú", "Madrid": "España", "Bangkok": "Tailandia" };
-        return cityMap[city] || "";
-    };
+    // --- EXTRACCIÓN DINÁMICA PARA LOS FILTROS ---
+    // Filtramos los valores nulos/vacíos y usamos Set para evitar duplicados, luego ordenamos alfabéticamente
+    const uniqueCountries = [...new Set(restaurantsList.map(r => r.country).filter(Boolean))].sort();
+    const uniqueCities = [...new Set(restaurantsList.map(r => r.city).filter(Boolean))].sort();
+    const uniqueFoodTypes = [...new Set(restaurantsList.map(r => r.food_type).filter(Boolean))].sort();
+    const uniqueOrigins = [...new Set(restaurantsList.map(r => r.cuisine_origin).filter(Boolean))].sort();
 
-    const filteredRestaurants = restaurantsToFilter.filter((rest) => {
+    // Lógica de filtrado en tiempo real
+    const filteredRestaurants = restaurantsList.filter((rest) => {
         const matchName = rest.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchType = foodType === "" || rest.food_type === foodType;
         const matchOrigin = origin === "" || rest.cuisine_origin === origin;
         const matchScore = rest.score >= parseInt(minScore);
-        
-        // Nuevos filtros (Ignoramos mayúsculas/minúsculas)
-        const matchCity = searchCity === "" || rest.city?.toLowerCase().includes(searchCity.toLowerCase());
-        
-        // Comprobamos si el país coincide (usando el del backend si existe, o el fallback temporal)
-        const currentCountry = rest.country || getCountryFallback(rest.city);
-        const matchCountry = searchCountry === "" || currentCountry === searchCountry;
+        const matchCity = searchCity === "" || rest.city === searchCity;
+        const matchCountry = searchCountry === "" || rest.country === searchCountry;
 
         return matchName && matchType && matchOrigin && matchScore && matchCity && matchCountry;
     });
@@ -58,68 +54,82 @@ export const Home = () => {
     return (
         <div className="container-fluid py-5" style={{ backgroundColor: "#fdfdfd" }}>
             <div className="container">
-                <h2 className="fw-bold mb-4" style={{ color: "#333" }}>
-                    Destacados en <span style={{ color: "#D32F2F" }}>{searchCountry || "El Mundo"}</span>
-                </h2>
+                
+                {/* TÍTULO Y CONTADOR CIRCULAR */}
+                <div className="d-flex align-items-center mb-4">
+                    <h2 className="fw-bold mb-0" style={{ color: "#333" }}>
+                        Destacados en <span style={{ color: "#D32F2F" }}>{searchCountry || "El Mundo"}</span>
+                    </h2>
+                    {/* El Contador Circular */}
+                    <div 
+                        className="ms-3 d-flex justify-content-center align-items-center rounded-circle text-white shadow-sm transition-all"
+                        style={{
+                            backgroundColor: "#D32F2F",
+                            width: "45px",
+                            height: "45px",
+                            fontSize: "1.2rem",
+                            fontWeight: "bold",
+                            transition: "all 0.3s ease" // Pequeña animación cuando cambia el número
+                        }}
+                        title={`${filteredRestaurants.length} restaurantes encontrados`}
+                    >
+                        {filteredRestaurants.length}
+                    </div>
+                </div>
 
                 {/* --- BARRA DE FILTROS --- */}
                 <div className="card shadow-sm p-3 mb-5 bg-white rounded-4 border-0">
                     <h6 className="mb-3 fw-bold text-secondary">
                         <i className="fas fa-filter me-2"></i>Filtra tu antojo
                     </h6>
-                    {/* Cambiamos a g-3 y col-md-4 para que quepan 3 por fila */}
                     <div className="row g-3">
                         
-                        {/* 1. Nombre */}
+                        {/* 1. Nombre (Único que se mantiene como texto) */}
                         <div className="col-12 col-md-4">
                             <input type="text" className="form-control bg-light border-0" placeholder="Buscar por nombre..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
                         
-                        {/* 2. Ciudad (Nuevo) */}
+                        {/* 2. Ciudad (Ahora es dinámico) */}
                         <div className="col-12 col-md-4">
-                            <input type="text" className="form-control bg-light border-0" placeholder="Buscar por ciudad..." value={searchCity} onChange={(e) => setSearchCity(e.target.value)} />
-                        </div>
-
-                        {/* 3. País (Nuevo) */}
-                        <div className="col-12 col-md-4">
-                            <select className="form-select bg-light border-0" value={searchCountry} onChange={(e) => setSearchCountry(e.target.value)} >
-                                <option value="">Cualquier País</option>
-                                <option value="Venezuela">Venezuela</option>
-                                <option value="México">México</option>
-                                <option value="España">España</option>
-                                <option value="Perú">Perú</option>
-                                <option value="Tailandia">Tailandia</option>
+                            <select className="form-select bg-light border-0" value={searchCity} onChange={(e) => setSearchCity(e.target.value)} >
+                                <option value="">Todas las Ciudades</option>
+                                {uniqueCities.map((city, index) => (
+                                    <option key={index} value={city}>{city}</option>
+                                ))}
                             </select>
                         </div>
 
-                        {/* 4. Tipo de Comida */}
+                        {/* 3. País (Ahora es dinámico) */}
+                        <div className="col-12 col-md-4">
+                            <select className="form-select bg-light border-0" value={searchCountry} onChange={(e) => setSearchCountry(e.target.value)} >
+                                <option value="">Todos los Países</option>
+                                {uniqueCountries.map((country, index) => (
+                                    <option key={index} value={country}>{country}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* 4. Tipo de Comida (Ahora es dinámico) */}
                         <div className="col-12 col-md-4">
                             <select className="form-select bg-light border-0" value={foodType} onChange={(e) => setFoodType(e.target.value)} >
                                 <option value="">Cualquier Tipo de Comida</option>
-                                <option value="Cortes">Cortes de Carne</option>
-                                <option value="Sushi">Sushi</option>
-                                <option value="Hamburguesas">Hamburguesas</option>
-                                <option value="Pasta">Pasta</option>
-                                <option value="Rellena">Arepa Rellena</option>
-                                <option value="Tacos">Tacos</option>
-                                <option value="Ceviche">Ceviche</option>
+                                {uniqueFoodTypes.map((type, index) => (
+                                    <option key={index} value={type}>{type}</option>
+                                ))}
                             </select>
                         </div>
 
-                        {/* 5. Origen */}
+                        {/* 5. Origen Culinario (Ahora es dinámico) */}
                         <div className="col-12 col-md-4">
                             <select className="form-select bg-light border-0" value={origin} onChange={(e) => setOrigin(e.target.value)} >
                                 <option value="">Cualquier Origen Culinario</option>
-                                <option value="Venezolana">Venezolana</option>
-                                <option value="Italiana">Italiana</option>
-                                <option value="Japonesa">Japonesa</option>
-                                <option value="Americana">Americana</option>
-                                <option value="Mexicana">Mexicana</option>
-                                <option value="Peruana">Peruana</option>
+                                {uniqueOrigins.map((org, index) => (
+                                    <option key={index} value={org}>{org}</option>
+                                ))}
                             </select>
                         </div>
 
-                        {/* 6. Rating */}
+                        {/* 6. Rating (Se mantiene estático porque son rangos numéricos) */}
                         <div className="col-12 col-md-4">
                             <select className="form-select bg-light border-0" value={minScore} onChange={(e) => setMinScore(e.target.value)} >
                                 <option value={0}>Cualquier Rating</option>
