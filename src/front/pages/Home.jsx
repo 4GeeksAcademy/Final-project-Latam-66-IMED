@@ -5,7 +5,8 @@ import { RestaurantCard } from "../components/RestaurantCard";
 export const Home = () => {
     const { store, dispatch } = useGlobalReducer();
 
-    // 1. Estados de los filtros (Eliminamos searchTerm porque ahora usaremos store.searchQuery)
+    // 1. Estados de los filtros
+    const [searchTerm, setSearchTerm] = useState("");
     const [foodType, setFoodType] = useState("");
     const [origin, setOrigin] = useState("");
     const [minScore, setMinScore] = useState(0);
@@ -39,15 +40,13 @@ export const Home = () => {
 
     // --- LÓGICA DE FILTRADO ---
     const filteredRestaurants = restaurantsList.filter((rest) => {
-        // Leemos la búsqueda global del Navbar (o del input de abajo)
-        const query = store.searchQuery ? store.searchQuery.toLowerCase() : "";
+        // Usamos la búsqueda local
+        const query = searchTerm.toLowerCase();
         
-        // Hacemos que la búsqueda coincida con el nombre o el tipo de comida
         const name = rest.name ? rest.name.toLowerCase() : "";
         const typeOfFood = rest.food_type ? rest.food_type.toLowerCase() : "";
         const matchSearch = name.includes(query) || typeOfFood.includes(query);
 
-        // Evaluamos el resto de tus filtros locales
         const matchType = foodType === "" || rest.food_type === foodType;
         const matchOrigin = origin === "" || rest.cuisine_origin === origin;
         const matchScore = rest.score >= parseInt(minScore);
@@ -59,9 +58,7 @@ export const Home = () => {
 
     // Función para limpiar absolutamente todos los filtros
     const clearAllFilters = () => {
-        // Limpiamos la búsqueda global
-        dispatch({ type: 'set_search_query', payload: "" });
-        // Limpiamos los estados locales
+        setSearchTerm(""); // Limpiamos estado local
         setFoodType(""); 
         setOrigin(""); 
         setMinScore(0); 
@@ -75,19 +72,18 @@ export const Home = () => {
                 
                 {/* TÍTULO Y CONTADOR CIRCULAR */}
                 <div className="d-flex align-items-center mb-4">
-                    <h2 className="fw-bold mb-0" style={{ color: "#333" }}>
-                        Destacados en <span style={{ color: "#D32F2F" }}>{searchCountry || "El Mundo"} ({searchCity || "Todas las Ciudades"})</span>
+                    {/* Fuente adaptable con clamp() para que no se rompa en celulares */}
+                    <h2 className="fw-bold mb-0" style={{ color: "#333", fontSize: "clamp(1.5rem, 4vw, 2rem)" }}>
+                        Destacados en <span style={{ color: "#D32F2F" }}>{searchCountry || "El Mundo"} ({searchCity || "Todas"})</span>
                     </h2>
-                    {/* El Contador Circular */}
                     <div 
-                        className="ms-3 d-flex justify-content-center align-items-center rounded-circle text-white shadow-sm transition-all"
+                        className="ms-3 d-flex justify-content-center align-items-center rounded-circle text-white shadow-sm transition-all flex-shrink-0"
                         style={{
                             backgroundColor: "#D32F2F",
-                            width: "45px",
-                            height: "45px",
-                            fontSize: "1.2rem",
-                            fontWeight: "bold",
-                            transition: "all 0.3s ease" 
+                            width: "40px",
+                            height: "40px",
+                            fontSize: "1.1rem",
+                            fontWeight: "bold"
                         }}
                         title={`${filteredRestaurants.length} restaurantes encontrados`}
                     >
@@ -95,67 +91,94 @@ export const Home = () => {
                     </div>
                 </div>
 
-                {/* --- BARRA DE FILTROS --- */}
+                {/* --- BARRA DE FILTROS COMPACTA --- */}
                 <div className="card shadow-sm p-3 mb-5 bg-white rounded-4 border-0">
                     <h6 className="mb-3 fw-bold text-secondary">
                         <i className="fas fa-filter me-2"></i>Filtra tu antojo
                     </h6>
-                    <div className="row g-3">
+                    {/* g-2 reduce el espacio en mobile, g-md-3 lo restaura en PC */}
+                    <div className="row g-2 g-md-3">
                         
-                        {/* 1. Nombre (CONECTADO AL NAVBAR Y AL ESTADO GLOBAL) */}
-                        <div className="col-12 col-md-4">
+                        {/* Nombre (Ahora es col-6 en móvil) */}
+                        <div className="col-6 col-md-4">
                             <input 
                                 type="text" 
-                                className="form-control bg-light border-0" 
-                                placeholder="Buscar por nombre o comida..." 
-                                value={store.searchQuery || ""} 
-                                onChange={(e) => dispatch({ type: 'set_search_query', payload: e.target.value })} 
+                                className="form-control form-control-sm bg-light border-0" 
+                                placeholder="Buscar..." 
+                                value={searchTerm} 
+                                onChange={(e) => setSearchTerm(e.target.value)} 
+                                style={{ fontSize: "0.85rem" }}
                             />
                         </div>
                         
-                        {/* 2. Ciudad */}
-                        <div className="col-12 col-md-4">
-                            <select className="form-select bg-light border-0" value={searchCity} onChange={(e) => setSearchCity(e.target.value)} >
-                                <option value="">Todas las Ciudades</option>
+                        {/* Ciudad */}
+                        <div className="col-6 col-md-4">
+                            <select 
+                                className="form-select form-select-sm bg-light border-0" 
+                                value={searchCity} 
+                                onChange={(e) => setSearchCity(e.target.value)}
+                                style={{ fontSize: "0.85rem" }} 
+                            >
+                                <option value="">Cualquier Ciudad</option>
                                 {uniqueCities.map((city, index) => (
                                     <option key={index} value={city}>{city}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* 3. País */}
-                        <div className="col-12 col-md-4">
-                            <select className="form-select bg-light border-0" value={searchCountry} onChange={(e) => setSearchCountry(e.target.value)} >
-                                <option value="">Todos los Países</option>
+                        {/* País */}
+                        <div className="col-6 col-md-4">
+                            <select 
+                                className="form-select form-select-sm bg-light border-0" 
+                                value={searchCountry} 
+                                onChange={(e) => setSearchCountry(e.target.value)}
+                                style={{ fontSize: "0.85rem" }} 
+                            >
+                                <option value="">Cualquier País</option>
                                 {uniqueCountries.map((country, index) => (
                                     <option key={index} value={country}>{country}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* 4. Tipo de Comida */}
-                        <div className="col-12 col-md-4">
-                            <select className="form-select bg-light border-0" value={foodType} onChange={(e) => setFoodType(e.target.value)} >
-                                <option value="">Cualquier Tipo de Comida</option>
+                        {/* Tipo de Comida */}
+                        <div className="col-6 col-md-4">
+                            <select 
+                                className="form-select form-select-sm bg-light border-0" 
+                                value={foodType} 
+                                onChange={(e) => setFoodType(e.target.value)}
+                                style={{ fontSize: "0.85rem" }} 
+                            >
+                                <option value="">Cualquier Comida</option>
                                 {uniqueFoodTypes.map((type, index) => (
                                     <option key={index} value={type}>{type}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* 5. Origen Culinario */}
-                        <div className="col-12 col-md-4">
-                            <select className="form-select bg-light border-0" value={origin} onChange={(e) => setOrigin(e.target.value)} >
-                                <option value="">Cualquier Origen Culinario</option>
+                        {/* Origen Culinario */}
+                        <div className="col-6 col-md-4">
+                            <select 
+                                className="form-select form-select-sm bg-light border-0" 
+                                value={origin} 
+                                onChange={(e) => setOrigin(e.target.value)}
+                                style={{ fontSize: "0.85rem" }} 
+                            >
+                                <option value="">Cualquier Origen</option>
                                 {uniqueOrigins.map((org, index) => (
                                     <option key={index} value={org}>{org}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* 6. Rating */}
-                        <div className="col-12 col-md-4">
-                            <select className="form-select bg-light border-0" value={minScore} onChange={(e) => setMinScore(e.target.value)} >
+                        {/* Rating */}
+                        <div className="col-6 col-md-4">
+                            <select 
+                                className="form-select form-select-sm bg-light border-0" 
+                                value={minScore} 
+                                onChange={(e) => setMinScore(e.target.value)}
+                                style={{ fontSize: "0.85rem" }} 
+                            >
                                 <option value={0}>Cualquier Rating</option>
                                 <option value={90}>Excelente (90+)</option>
                                 <option value={80}>Muy Bueno (80+)</option>
