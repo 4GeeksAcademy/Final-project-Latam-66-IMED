@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
@@ -10,6 +10,9 @@ export const Navbar = () => {
 	// Estado local exclusivo para la barra de búsqueda del Navbar
     const [navSearch, setNavSearch] = useState("");
 
+	// Rastreamos si el usuario hizo scroll
+    const [isScrolled, setIsScrolled] = useState(false);
+
     const navigate = useNavigate();
 
     // Traemos la lista de restaurantes desde el estado global
@@ -19,6 +22,22 @@ export const Navbar = () => {
 	// Verificamos si hay una sesión activa y leemos el rol del usuario
 	const token = sessionStorage.getItem("token");
 	const role = sessionStorage.getItem("role");
+
+	// Escuchamos el scroll de la ventana
+    useEffect(() => {
+        const handleScroll = () => {
+            // Si bajamos más de 50 pixeles, activamos el estado
+            if (window.scrollY > 50) {
+                setIsScrolled(true);
+            } else {
+                setIsScrolled(false);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        // Limpiamos el event listener al desmontar
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
 	// Función para cerrar sesión
 	const handleLogout = () => {
@@ -38,7 +57,19 @@ export const Navbar = () => {
 
 	return (
 		<>
-			<nav className="bg-fc-dark navbar-custom w-100 position-relative" style={{ zIndex: 1040 }}>
+			<nav 
+				className={`navbar-custom w-100 sticky-top top-0 ${isScrolled ? "" : "bg-fc-dark"}`} 
+                style={{ 
+                    zIndex: 1040,
+                    // Si está scrolleado, ponemos un negro transparente, sino usamos tu color base
+                    backgroundColor: isScrolled ? "rgba(18, 18, 18, 0.85)" : "var(--fc-dark)",
+                    // Efecto de vidrio esmerilado para que el fondo se vea borroso al pasar por debajo
+                    backdropFilter: isScrolled ? "blur(10px)" : "none",
+                    WebkitBackdropFilter: isScrolled ? "blur(10px)" : "none", // Soporte para Safari
+                    // Transición suave
+                    transition: "background-color 0.3s ease, backdrop-filter 0.3s ease" 
+                }}
+			>
 				<div className="container-fluid px-3 px-md-5">
 					<div className="d-flex justify-content-between align-items-center" style={{ height: "64px" }}>
 
