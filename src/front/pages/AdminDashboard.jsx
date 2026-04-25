@@ -297,12 +297,12 @@ export const AdminDashboard = () => {
             {/* Header y Contadores Destacados */}
             <div className="row align-items-center mb-4 bg-dark p-4 rounded-4 shadow">
                 <div className="col-12 col-md-6 mb-3 mb-md-0">
-                    <h1 className="fw-bold mb-2" style={{ color: "#D32F2F" }}>Panel de Control</h1>
-                    <div className="d-flex gap-3">
-                        <span className="badge fs-6 py-2 px-3" style={{ backgroundColor: "#4a4a4a", color: "#ffffff" }}>
+                    <h1 className="fw-bold mb-2 text-center" style={{ color: "#D32F2F" }}>Panel de Control</h1>
+                    <div className="d-flex flex-column flex-sm-row gap-3">
+                        <span className="badge fs-6 py-2 px-3 w-100 w-sm-auto" style={{ backgroundColor: "#4a4a4a", color: "#ffffff" }}>
                             Total Base de Datos: {restaurantsList.length}
                         </span>
-                        <span className="badge fs-6 py-2 px-3" style={{ backgroundColor: "#D32F2F", color: "#ffffff" }}>
+                        <span className="badge fs-6 py-2 px-3 w-100 w-sm-auto" style={{ backgroundColor: "#D32F2F", color: "#ffffff" }}>
                             Visibles con Filtro: {filtered.length}
                         </span>
                     </div>
@@ -310,14 +310,14 @@ export const AdminDashboard = () => {
                 <div className="col-12 col-md-6 text-md-end d-flex gap-2 justify-content-md-end flex-wrap">
                     {/* Botón Masivo arreglado */}
                     <button 
-                        className="btn btn-outline-light fw-bold" 
+                        className="btn btn-outline-light fw-bold w-100 w-sm-auto" 
                         onClick={handleBulkClick}
                     >
                         {showBulk ? "Ocultar Carga Masiva" : "📋 Carga / Edición Masiva"}
                     </button>
                     {/* Botón Individual arreglado */}
                     <button 
-                        className="btn fw-bold text-white" 
+                        className="btn fw-bold text-white w-100 w-sm-auto" 
                         style={{ backgroundColor: "#D32F2F" }} 
                         onClick={handleCreateClick}
                     >
@@ -499,57 +499,184 @@ export const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* TABLA DE GESTIÓN (Con Textos Súper Claros) */}
-            <div className="table-responsive card bg-dark text-light border-0 rounded-4 shadow overflow-hidden">
-                <table className="table table-dark table-hover align-middle mb-0 fs-8">
+            {/* --- ESTILOS CSS REFORZADOS PARA MÁXIMA LEGIBILIDAD --- */}
+            <style>
+                {`
+                @media (max-width: 768px) {
+                    .mobile-grid-table thead {
+                        display: none;
+                    }
+                    .mobile-grid-table tbody, 
+                    .mobile-grid-table tr {
+                        display: block;
+                        width: 100%;
+                    }
+                    .mobile-grid-table tr {
+                        background-color: #2c2c2c;
+                        border: 2px solid #444;
+                        border-radius: 1.25rem;
+                        margin-bottom: 1.5rem;
+                        padding: 1.25rem;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.75rem;
+                    }
+                    .mobile-grid-table td {
+                        display: flex;
+                        justify-content: flex-start;
+                        align-items: center;
+                        border: none !important;
+                        padding: 0 !important;
+                        width: 100%;
+                        font-size: 1rem;
+                    }
+                    /* Etiquetas para identificar los datos en móvil */
+                    .mobile-grid-table td::before {
+                        content: attr(data-label);
+                        font-weight: 800;
+                        color: #ff6b6b; /* Rojo vibrante para la etiqueta */
+                        min-width: 100px;
+                        text-transform: uppercase;
+                        font-size: 0.75rem;
+                        letter-spacing: 1px;
+                    }
+                    
+                    /* Ajustes específicos por orden */
+                    .td-check { 
+                        order: 1; 
+                        border-bottom: 2px solid #444 !important;
+                        padding-bottom: 1rem !important;
+                        margin-bottom: 0.5rem;
+                    }
+                    .td-check::before { content: "Seleccionar:"; color: #fff; }
+
+                    .td-id { order: 2; }
+                    .td-name { order: 3; font-size: 1.2rem !important; }
+                    .td-country { order: 4; }
+                    .td-city { order: 5; }
+                    .td-type { order: 6; }
+                    .td-score { order: 7; }
+                    
+                    .td-actions { 
+                        order: 8; 
+                        margin-top: 1rem;
+                        padding-top: 1rem !important;
+                        border-top: 2px solid #444 !important;
+                        display: flex;
+                        gap: 0.5rem;
+                        justify-content: space-between !important;
+                    }
+                    .td-actions::before { display: none; }
+                    
+                    .td-actions button {
+                        flex: 1;
+                        padding: 0.75rem !important;
+                        font-size: 0.9rem !important;
+                    }
+                }
+
+                /* Forzar blanco en títulos y nombres */
+                .text-white-force {
+                    color: #ffffff !important;
+                    opacity: 1 !important;
+                }
+                `}
+            </style>
+
+            {/* TABLA DE GESTIÓN */}
+            <div className="table-responsive card bg-dark border-0 rounded-4 shadow overflow-hidden">
+                <table className="table table-dark table-hover align-middle mb-0 mobile-grid-table">
                     <thead style={{ backgroundColor: "#2c2c2c" }}>
                         <tr style={{ color: "#ff6b6b" }}>
                             <th className="py-3 px-4 text-center" style={{ width: "50px" }}>
                                 <input 
                                     type="checkbox" 
-                                    className="form-check-input border-secondary" 
+                                    className="form-check-input border-white" 
                                     style={{ transform: "scale(1.5)", cursor: "pointer" }}
                                     checked={isAllSelected}
                                     onChange={handleSelectAll}
                                 />
                             </th>
-                            <th className="fw-bold">ID</th>
-                            <th className="fw-bold">Nombre</th>
-                            <th className="fw-bold">País</th>
-                            <th className="fw-bold">Ciudad</th>
-                            <th className="fw-bold">Tipo</th>
-                            <th className="fw-bold">Score</th>
-                            <th className="text-end px-4 fw-bold">Acciones</th>
+                            <th className="fw-bold text-white-force">ID</th>
+                            <th className="fw-bold text-white-force">Nombre</th>
+                            <th className="fw-bold text-white-force">País</th>
+                            <th className="fw-bold text-white-force">Ciudad</th>
+                            <th className="fw-bold text-white-force">Tipo</th>
+                            <th className="fw-bold text-white-force">Score</th>
+                            <th className="text-end px-4 fw-bold text-white-force">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filtered.length === 0 ? (
-                            <tr><td colSpan="8" className="text-center py-5 text-light fw-bold fs-8">No hay restaurantes que coincidan con la búsqueda.</td></tr>
+                            <tr><td colSpan="8" className="text-center py-5 text-white fw-bold">No hay resultados disponibles.</td></tr>
                         ) : (
                             filtered.map(r => (
                                 <tr key={r.id} className={selectedIds.includes(r.id) ? "bg-danger bg-opacity-25" : ""}>
-                                    <td className="px-4 text-center">
-                                        <input 
-                                            type="checkbox" 
-                                            className="form-check-input border-secondary"
-                                            style={{ transform: "scale(1.5)", cursor: "pointer" }}
-                                            checked={selectedIds.includes(r.id)}
-                                            onChange={() => handleSelectOne(r.id)}
-                                        />
+                                    
+                                    {/* 1. Checkbox */}
+                                    <td className="td-check px-4 text-center">
+                                     <div className="form-check d-flex justify-content-between gap-4 mb-0">
+                                            <input 
+                                                type="checkbox" 
+                                                id={`check-${r.id}`}
+                                                className="form-check-input border-white m-0"
+                                                style={{ transform: "scale(1.4)", cursor: "pointer" }}
+                                                checked={selectedIds.includes(r.id)}
+                                                onChange={() => handleSelectOne(r.id)}
+                                            />
+                                            {/* Esta etiqueta solo se ve en MÓVIL (d-md-none) */}
+                                            <label 
+                                                className="form-check-label text-white fw-bold d-md-none mb-0" 
+                                                htmlFor={`check-${r.id}`}
+                                                style={{ cursor: "pointer", fontSize: "0.9rem" }}
+                                            >
+                                                Seleccionar
+                                            </label>
+                                        </div>
                                     </td>
 
-                                    <td className="text-info fw-bold">#{r.id}</td>
-                                    <td className="text-white fw-bold">{r.name}</td>
-                                    <td><span className="text-light"><i className="fas fa-globe-americas me-1 text-primary"></i>{r.country || "N/A"}</span></td>
-                                    <td className="text-light">{r.city}</td>
-                                    <td><span className="badge bg-primary fs-6">{r.food_type}</span></td>
-                                    <td className="fw-bold text-warning fs-8">{r.score}</td>
-                                    <td className="text-end px-4">
-                                        <button className="btn btn-sm btn-light text-dark fw-bold me-2 rounded-pill px-3" onClick={() => handleEditClick(r)}>
+                                    {/* 2. ID */}
+                                    <td className="td-id text-info fw-bold" data-label="ID:">#{r.id}</td>
+
+                                    {/* 3. Nombre */}
+                                    <td className="td-name text-white-force fw-bold fs-6" data-label="Nombre:">
+                                        {r.name}
+                                    </td>
+
+                                    {/* 4. País */}
+                                    <td className="td-country text-white-force fs-6" data-label="País:">
+                                        <i className="fas fa-globe-americas me-2 text-primary"></i>
+                                        {r.country}
+                                    </td>
+
+                                    {/* 5. Ciudad */}
+                                    <td className="td-city text-white-force fs-6" data-label="Ciudad:">
+                                        {r.city}
+                                    </td>
+
+                                    {/* 6. Tipo */}
+                                    <td className="td-type" data-label="Tipo:">
+                                        <span className="badge bg-primary px-3 py-2">{r.food_type}</span>
+                                    </td>
+
+                                    {/* 7. Score */}
+                                    <td className="td-score fw-bold text-warning fs-6" data-label="Score:">
+                                        <i className="fas fa-star me-1"></i>{r.score}
+                                    </td>
+
+                                    {/* 8 y 9. Acciones (Editar y Eliminar) */}
+                                    <td className="td-actions text-end px-4">
+                                        <button 
+                                            className="btn btn-light text-dark fw-bold rounded-pill" 
+                                            onClick={() => handleEditClick(r)}
+                                        >
                                             <i className="fas fa-edit me-1"></i> Editar
                                         </button>
-                                        <button className="btn btn-sm btn-danger fw-bold rounded-pill px-3" onClick={() => handleDelete(r.id)}>
-                                            <i className="fas fa-trash me-1"></i>
+                                        <button 
+                                            className="btn btn-danger fw-bold rounded-pill" 
+                                            onClick={() => handleDelete(r.id)}
+                                        >
+                                            <i className="fas fa-trash me-1"></i> Borrar
                                         </button>
                                     </td>
                                 </tr>
@@ -558,6 +685,7 @@ export const AdminDashboard = () => {
                     </tbody>
                 </table>
             </div>
+
         </div>
     );
 };
