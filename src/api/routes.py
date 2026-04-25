@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, Blueprint
-from api.models import db, User, Restaurant, Review, Favorite, PlaceToVisit
+from api.models import db, User, Restaurant, Review, Favorite, PlaceToVisit, Comment
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token
@@ -273,3 +273,54 @@ def update_user_profile():
         # Mira tu terminal negra de Flask, ahí verás el error real impreso
         print(f"--- ERROR CRÍTICO ---: {str(e)}")
         return jsonify({"msg": "Error de duplicado en la base de datos"}), 500
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Rutas para ver los comentarios 
+
+@api.route('/users', methods=['GET'])
+@jwt_required()
+def get_all_users():
+    # Solo el admin debería poder ver esta lista
+    current_user_id = get_jwt_identity()
+    admin = User.query.get(current_user_id)
+    if admin.role != "admin":
+        return jsonify({"msg": "No autorizado"}), 403
+
+    users = User.query.all()
+    return jsonify([user.serialize() for user in users]), 200
+
+# Ruta para ver los comentarios de un usuario específico
+@api.route('/users/<int:user_id>/comments', methods=['GET'])
+@jwt_required()
+def get_user_comments(user_id):
+    comments = Comment.query.filter_by(user_id=user_id).all()
+    return jsonify([{
+        "text": c.text,
+        "score": c.score,
+        "restaurant_name": Restaurant.query.get(c.restaurant_id).name
+    } for c in comments]), 200

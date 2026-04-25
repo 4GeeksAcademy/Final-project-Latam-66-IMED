@@ -120,3 +120,39 @@ class PlaceToVisit(db.Model):
             "id": self.id,
             "restaurant": self.restaurant.serialize()
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Tablas para comentarios
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))
+    # Relación para acceder al usuario desde el comentario
+    user = db.relationship('User', backref='comments')
+
+# Actualiza el serialize de User en models.py para incluir el conteo
+def serialize(self):
+    return {
+        "id": self.id,
+        "email": self.email,
+        "username": self.username,
+        "full_name": self.full_name,
+        "role": self.role,
+        "review_count": len(self.comments) # Esto cuenta los comentarios automáticamente
+    }
