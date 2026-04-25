@@ -99,6 +99,7 @@ export const Navbar = () => {
 										color: "var(--fc-dark)",
 										width: "100%",
 										paddingLeft: "40px",
+										paddingRight: "35px",
 										paddingTop: "0.25rem",
 										paddingBottom: "0.25rem"
 									}}
@@ -117,6 +118,16 @@ export const Navbar = () => {
 								>
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 								</svg>
+
+								{navSearch.length > 0 && (
+                                    <i 
+                                        className="fas fa-times position-absolute top-50 translate-middle-y text-secondary"
+                                        style={{ right: "15px", cursor: "pointer", zIndex: 5 }}
+                                        onClick={() => setNavSearch("")}
+                                        title="Limpiar búsqueda"
+                                    ></i>
+                                )}
+
 								{/* CAJA DE RESULTADOS FLOTANTE */}
                                 {navSearch.trim() !== "" && (
                                     <div 
