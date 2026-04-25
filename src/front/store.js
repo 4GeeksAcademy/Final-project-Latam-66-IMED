@@ -1,12 +1,21 @@
 export const initialStore = () => {
   return {
     // Iniciamos el arreglo vacío. Se llenará cuando hagamos el GET al backend.
-    restaurants: []
+    restaurants: [],
+
+    searchQuery: ""
   };
 };
 
 export default function storeReducer(store, action = {}) {
   switch (action.type) {
+
+    // 0. Guarda lo que el usuario escribe en el buscador
+    case 'set_search_query':
+      return {
+        ...store,
+        searchQuery: action.payload
+      };
 
     // 1. CARGAR TODOS: Reemplaza la lista entera con la que viene del backend
     case 'set_restaurants':

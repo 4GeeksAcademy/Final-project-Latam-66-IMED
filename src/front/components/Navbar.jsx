@@ -1,12 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export const Navbar = () => {
 	const [isOpen, setIsOpen] = useState(false);
 	const closeMenu = () => setIsOpen(false);
 	const toggleMenu = () => setIsOpen(!isOpen);
 
-	const navigate = useNavigate();
+	// Estado local exclusivo para la barra de búsqueda del Navbar
+    const [navSearch, setNavSearch] = useState("");
+
+    const navigate = useNavigate();
+
+    // Traemos la lista de restaurantes desde el estado global
+    const { store } = useGlobalReducer();
+    const restaurantsList = store.restaurants || [];
 
 	// Verificamos si hay una sesión activa y leemos el rol del usuario
 	const token = sessionStorage.getItem("token");
@@ -18,6 +26,15 @@ export const Navbar = () => {
 		sessionStorage.removeItem("role");
 		navigate("/");
 	};
+
+	// Lógica para filtrar los resultados del Navbar (busca por nombre o tipo de comida)
+    const searchResults = navSearch.trim() === "" ? [] : restaurantsList.filter((rest) => {
+        const query = navSearch.toLowerCase();
+        const name = rest.name ? rest.name.toLowerCase() : "";
+        const type = rest.food_type ? rest.food_type.toLowerCase() : "";
+        
+        return name.includes(query) || type.includes(query);
+	});
 
 	return (
 		<>
@@ -44,6 +61,8 @@ export const Navbar = () => {
 									type="text"
 									className="form-control rounded-pill"
 									placeholder="Buscar..."
+									value={navSearch}
+                                    onChange={(e) => setNavSearch(e.target.value)}
 									style={{
 										backgroundColor: "var(--fc-light)",
 										color: "var(--fc-dark)",
@@ -67,6 +86,36 @@ export const Navbar = () => {
 								>
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 								</svg>
+								{/* CAJA DE RESULTADOS FLOTANTE */}
+                                {navSearch.trim() !== "" && (
+                                    <div 
+                                        className="position-absolute bg-white w-100 shadow-lg rounded-3 overflow-auto mt-2" 
+                                        style={{ top: "100%", left: 0, maxHeight: "300px", zIndex: 1050 }}
+                                    >
+                                        {searchResults.length > 0 ? (
+                                            searchResults.map((rest, index) => (
+                                                <Link 
+                                                    to={`/restaurant/${rest.id}`}
+                                                    key={index}
+                                                    onClick={() => setNavSearch("")} // Limpia el buscador al hacer clic
+                                                    className="d-block p-3 text-decoration-none text-dark border-bottom table-hover-custom"
+                                                    style={{ transition: "background-color 0.2s" }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                                                >
+                                                    <div className="fw-bold text-truncate">{rest.name}</div>
+                                                    <div className="small text-muted text-truncate">
+                                                        <i className="fas fa-utensils me-1"></i>{rest.food_type}
+                                                    </div>
+                                                </Link>
+                                            ))
+                                        ) : (
+                                            <div className="p-3 text-center text-muted">
+                                                <small>No hay coincidencias...</small>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 							</div>
 
 							{/* RENDERIZADO CONDICIONAL DESKTOP */}
