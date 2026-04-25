@@ -12,6 +12,7 @@ import { Login } from "./pages/Login";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Single } from "./pages/Single"; // Singleview de los restaurentes
 import { Profile } from "./pages/Profile";
+import { Categorias } from "./pages/Categorias";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -39,6 +40,7 @@ export const router = createBrowserRouter(
       <Route path="login" element={<Login />} />
       <Route path="admin" element={<AdminDashboard />} />
       <Route path="perfil" element={<Profile />} />
+      <Route path="categorias" element={<Categorias />} />
     </Route>
   )
 );

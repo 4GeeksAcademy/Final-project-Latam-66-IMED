@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { RestaurantCard } from "../components/RestaurantCard";
 
 export const Home = () => {
     const { store, dispatch } = useGlobalReducer();
+    const location = useLocation();
 
     // 1. Estados de los filtros
     const [searchTerm, setSearchTerm] = useState("");
-    const [foodType, setFoodType] = useState("");
+    const [foodType, setFoodType] = useState(location.state?.selectedCategory || "");
     const [origin, setOrigin] = useState("");
     const [minScore, setMinScore] = useState(0);
     const [searchCity, setSearchCity] = useState("");
     const [searchCountry, setSearchCountry] = useState("");
+
+    useEffect(() => {
+        if (location.state?.selectedCategory) {
+            setFoodType(location.state.selectedCategory);
+            // Opcional: limpiar los otros filtros para que la búsqueda sea limpia
+            setSearchTerm("");
+            setSearchCity("");
+            setSearchCountry("");
+        }
+    }, [location.state]);
 
     useEffect(() => {
         if (!store.restaurants || store.restaurants.length === 0) {
