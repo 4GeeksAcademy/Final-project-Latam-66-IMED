@@ -41,7 +41,8 @@ class User(db.Model):
         "city": self.city,
         "age": self.age,
         "bio": self.bio,
-        "profile_picture": self.profile_picture
+        "profile_picture": self.profile_picture,
+        "reviews": [review.serialize() for review in self.reviews]
         }
 
 # tabla de restaurantes o base de datos de restaurantes   
@@ -149,12 +150,24 @@ class Comment(db.Model):
     restaurant = db.relationship('Restaurant') # Añadido para acceder al nombre del restaurante desde el perfil
 
     def serialize(self):
+
+    # Determinamos qué nombre mostrar para que nunca salga vacío
+        display_name = "Usuario"
+        if self.user:
+            if self.user.username:
+                display_name = self.user.username
+            elif self.user.full_name:
+                display_name = self.user.full_name
+            else:
+                # Corta el texto antes del @ del correo
+                display_name = self.user.email.split('@')[0]
+        
         return {
             "id": self.id,
             "text": self.text,
             "score": self.score,
             "user_id": self.user_id,
-            "username": self.user.username if self.user else "Usuario",
+            "username": display_name,
             "restaurant_id": self.restaurant_id,
             "restaurant_name": self.restaurant.name if self.restaurant else "Restaurante"
         }
