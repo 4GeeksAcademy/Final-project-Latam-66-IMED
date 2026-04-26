@@ -370,3 +370,47 @@ def get_specific_user_comments(user_id):
         "score": c.score,
         "restaurant_name": Restaurant.query.get(c.restaurant_id).name
     } for c in comments]), 200
+
+
+# -----------------------------------------------------------
+# EDITAR UN COMENTARIO (PUT)
+# -----------------------------------------------------------
+@api.route('/comments/<int:comment_id>', methods=['PUT'])
+@jwt_required()
+def update_comment(comment_id):
+    current_user_id = get_jwt_identity()
+    comment = Comment.query.get(comment_id)
+    
+    if not comment:
+        return jsonify({"msg": "Comentario no encontrado"}), 404
+        
+    # Verificamos que quien intenta editar sea el dueño del comentario
+    if str(comment.user_id) != str(current_user_id):
+        return jsonify({"msg": "No autorizado para editar este comentario"}), 403
+        
+    body = request.get_json()
+    if 'text' in body: comment.text = body['text']
+    if 'score' in body: comment.score = body['score']
+    
+    db.session.commit()
+    return jsonify({"msg": "Comentario actualizado", "comment": comment.serialize()}), 200
+
+# -----------------------------------------------------------
+# ELIMINAR UN COMENTARIO (DELETE)
+# -----------------------------------------------------------
+@api.route('/comments/<int:comment_id>', methods=['DELETE'])
+@jwt_required()
+def delete_comment(comment_id):
+    current_user_id = get_jwt_identity()
+    comment = Comment.query.get(comment_id)
+    
+    if not comment:
+        return jsonify({"msg": "Comentario no encontrado"}), 404
+        
+    # Verificamos que quien intenta borrar sea el dueño
+    if str(comment.user_id) != str(current_user_id):
+        return jsonify({"msg": "No autorizado para eliminar este comentario"}), 403
+        
+    db.session.delete(comment)
+    db.session.commit()
+    return jsonify({"msg": "Comentario eliminado exitosamente"}), 200

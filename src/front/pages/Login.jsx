@@ -32,6 +32,7 @@ export const Login = () => {
                 // Asumiendo que tu backend devuelve el token bajo la propiedad 'access_token'
                 sessionStorage.setItem("token", data.access_token);
                 sessionStorage.setItem("role", data.role); // Guardamos el rol
+                sessionStorage.setItem("user_id", data.user_id);
 
                 if (data.role === "admin") {
                     navigate("/admin");

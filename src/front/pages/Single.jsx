@@ -15,6 +15,8 @@ export const Single = () => {
     const [comments, setComments] = useState([]); // Guarda los comentarios de la BD
     const [newScore, setNewScore] = useState(""); // Guarda el puntaje del input
     const [newText, setNewText] = useState(""); // Guarda el texto del input
+    
+    const [editingId, setEditingId] = useState(null); // Guarda el ID de la reseña que se está editando
 
     // 3. Buscamos la info del restaurante al cargar la página
     useEffect(() => {
@@ -51,27 +53,63 @@ export const Single = () => {
     }, [id, store.restaurants]);
 
     // NUEVO: Función para enviar el comentario a la base de datos
+    // Función para Crear o Editar el comentario
     const handleSendComment = async () => {
         if (!newScore || !newText) return alert("Por favor llena el puntaje y el comentario");
 
         try {
-            const token = sessionStorage.getItem("token"); // Ajusta esto si usas localStorage
-            const resp = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
+            const token = sessionStorage.getItem("token"); 
+            
+            // Si hay editingId hacemos PUT, si no hacemos POST
+            const method = editingId ? "PUT" : "POST";
+            const url = editingId 
+                ? import.meta.env.VITE_BACKEND_URL + `/api/comments/${editingId}`
+                : import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`;
+
+            const resp = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({ score: parseInt(newScore), text: newText })
             });
 
             if (resp.ok) {
                 const data = await resp.json();
-                setComments([...comments, data.comment]); // Agrega el comentario a la lista al instante
-                setNewScore(""); // Limpia el input
-                setNewText("");  // Limpia el input
+                if (editingId) {
+                    setComments(comments.map(c => c.id === editingId ? data.comment : c));
+                    setEditingId(null);
+                } else {
+                    setComments([...comments, data.comment]); 
+                }
+                setNewScore(""); setNewText("");  
             } else {
                 alert("Error al enviar el comentario");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    };
+
+    // Función para activar el modo edición
+    const handleEditClick = (comment) => {
+        setEditingId(comment.id);
+        setNewScore(comment.score);
+        setNewText(comment.text);
+    };
+
+    // Función para eliminar reseña
+    const handleDeleteComment = async (commentId) => {
+        if (!window.confirm("¿Seguro que deseas eliminar esta reseña?")) return;
+        try {
+            const token = sessionStorage.getItem("token");
+            const resp = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/comments/${commentId}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (resp.ok) {
+                setComments(comments.filter(c => c.id !== commentId));
+            } else {
+                alert("Error al intentar eliminar");
             }
         } catch (error) {
             console.error("Error:", error);
@@ -100,6 +138,7 @@ export const Single = () => {
 
     // MODIFICADO: Añadido sessionStorage.getItem por si el token no se carga a tiempo en el store global
     const isUserLoggedIn = store.token || store.user || sessionStorage.getItem("token");
+    const currentUserId = sessionStorage.getItem("user_id"); // Para saber si es dueño del comentario
 
     return (
         <div className="container py-5 mt-4">
@@ -173,9 +212,10 @@ export const Single = () => {
                     {/* Verificación de Login para poder comentar */}
                     {isUserLoggedIn ? (
                         <div className="card shadow-sm p-4 mb-5 rounded-4 border-0 bg-white" style={{ borderLeft: "5px solid #D32F2F !important" }}>
-                            <h5 className="fw-bold mb-3">Deja tu puntuación</h5>
+                            
+                            {/* NUEVO: Cambia el título si estamos editando */}
+                            <h5 className="fw-bold mb-3">{editingId ? "Editando tu reseña" : "Deja tu puntuación"}</h5>
                             <div className="d-flex flex-column flex-md-row gap-3">
-                                {/* MODIFICADO: Conectamos los inputs al estado (value y onChange) */}
                                 <input 
                                     type="number" className="form-control" placeholder="Puntaje (0-100)" max="100" min="0" style={{ maxWidth: "150px" }} 
                                     value={newScore} onChange={(e) => setNewScore(e.target.value)}
@@ -184,11 +224,17 @@ export const Single = () => {
                                     type="text" className="form-control" placeholder="Escribe tu comentario aquí..." 
                                     value={newText} onChange={(e) => setNewText(e.target.value)}
                                 />
-                                {/* MODIFICADO: Agregamos el evento onClick para llamar a la función */}
                                 <button onClick={handleSendComment} className="btn btn-primary px-4 fw-bold rounded-3" style={{ backgroundColor: "#D32F2F", border: "none" }}>
-                                    Enviar
+                                    {editingId ? "Guardar" : "Enviar"}
                                 </button>
+                                {/* NUEVO: Botón de cancelar edición */}
+                                {editingId && (
+                                    <button onClick={() => { setEditingId(null); setNewScore(""); setNewText(""); }} className="btn btn-secondary px-4 fw-bold rounded-3">
+                                        Cancelar
+                                    </button>
+                                )}
                             </div>
+
                         </div>
                     ) : (
                         <div className="alert alert-warning rounded-4 border-0 shadow-sm d-flex align-items-center p-4 mb-5" style={{ backgroundColor: "#fff3cd" }}>
@@ -216,12 +262,28 @@ export const Single = () => {
                                         >
                                             {c.score}
                                         </div>
-                                        <div>
-                                            {/* MODIFICADO: Cambiamos c.user por c.username, asumiendo que así lo envías desde models.py */}
+                                        
+
+                                        {/* NUEVO: Agregamos flex-grow-1 para empujar los botones a la derecha */}
+                                        <div className="flex-grow-1">
                                             <h6 className="mb-1 fw-bold text-dark">{c.username || "Usuario"}</h6>
                                             <p className="mb-0 text-secondary">{c.text}</p>
                                         </div>
+
+                                        {/* NUEVO: Botones de Editar y Eliminar (Solo visibles para el dueño) */}
+                                        {String(c.user_id) === String(currentUserId) && (
+                                            <div className="d-flex flex-column gap-2 ms-auto">
+                                                <button onClick={() => handleEditClick(c)} className="btn btn-sm btn-outline-primary border-0" title="Editar">
+                                                    <i className="fas fa-edit"></i>
+                                                </button>
+                                                <button onClick={() => handleDeleteComment(c.id)} className="btn btn-sm btn-outline-danger border-0" title="Eliminar">
+                                                    <i className="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
+
+
                                 );
                             })
                         )}
