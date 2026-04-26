@@ -53,6 +53,20 @@ export default function storeReducer(store, action = {}) {
         ...store,
         message: action.payload
       };
+    
+    // Guarda los comentarios de un restaurante en específico
+    case 'set_restaurant_comments':
+      return {
+        ...store,
+        currentRestaurantComments: action.payload
+      };
+
+    // Guarda los comentarios del usuario logueado para su perfil
+    case 'set_user_comments':
+      return {
+        ...store,
+        userProfileComments: action.payload
+      };
 
     default:
       throw Error('Acción desconocida: ' + action.type);

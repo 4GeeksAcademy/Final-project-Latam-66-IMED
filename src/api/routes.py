@@ -270,12 +270,58 @@ def update_user_profile():
 
     except Exception as e:
         db.session.rollback()
-        # Mira tu terminal negra de Flask, ahí verás el error real impreso
         print(f"--- ERROR CRÍTICO ---: {str(e)}")
         return jsonify({"msg": "Error de duplicado en la base de datos"}), 500
     
 
+# -----------------------------------------------------------
+# 1. CREAR UN COMENTARIO EN UN RESTAURANTE
+# -----------------------------------------------------------
+@api.route('/restaurants/<int:restaurant_id>/comments', methods=['POST'])
+@jwt_required() # Solo usuarios registrados
+def create_comment(restaurant_id):
+    current_user_id = get_jwt_identity()
+    body = request.get_json()
 
+    # Validamos que vengan los campos obligatorios según tu modelo (text y score)
+    if 'text' not in body or 'score' not in body:
+        return jsonify({"msg": "El texto y el score son obligatorios"}), 400
+
+    # Verificamos que el restaurante exista
+    restaurant = Restaurant.query.get(restaurant_id)
+    if not restaurant:
+        return jsonify({"msg": "Restaurante no encontrado"}), 404
+
+    # Creamos el comentario usando los nombres exactos de tus columnas
+    new_comment = Comment(
+        text=body['text'],
+        score=body['score'],
+        user_id=current_user_id,
+        restaurant_id=restaurant_id
+    )
+
+    db.session.add(new_comment)
+    db.session.commit()
+
+    return jsonify({"msg": "Comentario creado exitosamente", "comment": new_comment.serialize()}), 201
+
+# -----------------------------------------------------------
+# 2. OBTENER COMENTARIOS DE UN RESTAURANTE (Para la vista Single)
+# -----------------------------------------------------------
+@api.route('/restaurants/<int:restaurant_id>/comments', methods=['GET'])
+def get_restaurant_comments(restaurant_id):
+    comments = Comment.query.filter_by(restaurant_id=restaurant_id).all()
+    return jsonify([comment.serialize() for comment in comments]), 200
+
+# -----------------------------------------------------------
+# 3. OBTENER COMENTARIOS DEL USUARIO (Para la vista Profile)
+# -----------------------------------------------------------
+@api.route('/users/comments', methods=['GET'])
+@jwt_required()
+def get_user_comments():
+    current_user_id = get_jwt_identity()
+    comments = Comment.query.filter_by(user_id=current_user_id).all()
+    return jsonify([comment.serialize() for comment in comments]), 200
 
 
 
@@ -317,7 +363,7 @@ def get_all_users():
 # Ruta para ver los comentarios de un usuario específico
 @api.route('/users/<int:user_id>/comments', methods=['GET'])
 @jwt_required()
-def get_user_comments(user_id):
+def get_specific_user_comments(user_id):
     comments = Comment.query.filter_by(user_id=user_id).all()
     return jsonify([{
         "text": c.text,

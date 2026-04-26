@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+/*
+mport React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
@@ -11,6 +12,7 @@ export const Single = () => {
     const [restaurant, setRestaurant] = useState(null);
     const [loading, setLoading] = useState(true);
 
+
     // --- NUEVOS ESTADOS PARA LOS COMENTARIOS ---
     const [comments, setComments] = useState([]); // Guarda los comentarios de la BD
     const [newScore, setNewScore] = useState(""); // Guarda el puntaje del input
@@ -18,6 +20,7 @@ export const Single = () => {
 
     // 3. Buscamos la info del restaurante al cargar la página
     useEffect(() => {
+        // Le cambiamos el nombre a fetchData porque ahora trae 2 cosas (restaurante y comentarios)
         const fetchData = async () => {
             try {
                 // --- 1.Traer el restaurante ---
@@ -27,6 +30,7 @@ export const Single = () => {
                     const data = await resp.json();
                     setRestaurant(data);
                 } else {
+                    // Plan B: Si el backend aún no tiene el endpoint individual
                     if (store.restaurants && store.restaurants.length > 0) {
                         const found = store.restaurants.find(r => r.id === parseInt(id));
                         setRestaurant(found || null);
@@ -37,6 +41,7 @@ export const Single = () => {
                 const respComments = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`);
                 if (respComments.ok) {
                     const commentsData = await respComments.json();
+                    // Guardamos los comentarios en el nuevo estado
                     setComments(commentsData); 
                 }
 
@@ -47,36 +52,8 @@ export const Single = () => {
             }
         };
 
-        fetchData(); 
+        fetchData(); // Ejecutamos la función
     }, [id, store.restaurants]);
-
-    // NUEVO: Función para enviar el comentario a la base de datos
-    const handleSendComment = async () => {
-        if (!newScore || !newText) return alert("Por favor llena el puntaje y el comentario");
-
-        try {
-            const token = sessionStorage.getItem("token"); // Ajusta esto si usas localStorage
-            const resp = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ score: parseInt(newScore), text: newText })
-            });
-
-            if (resp.ok) {
-                const data = await resp.json();
-                setComments([...comments, data.comment]); // Agrega el comentario a la lista al instante
-                setNewScore(""); // Limpia el input
-                setNewText("");  // Limpia el input
-            } else {
-                alert("Error al enviar el comentario");
-            }
-        } catch (error) {
-            console.error("Error:", error);
-        }
-    };
 
     // Pantallas de carga y error
     if (loading) return <div className="text-center py-5 mt-5"><h5><i className="fas fa-spinner fa-spin me-2"></i>Cargando detalles...</h5></div>;
@@ -96,10 +73,14 @@ export const Single = () => {
     };
     const config = getRankingConfig(restaurant.score);
 
-    // MODIFICADO: Eliminamos la constante mockComments porque ya usaremos la variable de estado 'comments' real
+    // Comentarios Simulados (Próximo paso para conectar con la Base de Datos)
+    const mockComments = [
+        { id: 1, user: "María G.", text: "La atención fue increíble, la comida llegó rápido.", score: 95 },
+        { id: 2, user: "Juan Pérez", text: "Muy buen ambiente, pero podría mejorar el precio.", score: 75 }
+    ];
 
-    // MODIFICADO: Añadido sessionStorage.getItem por si el token no se carga a tiempo en el store global
-    const isUserLoggedIn = store.token || store.user || sessionStorage.getItem("token");
+    // Verificación de Login (Asumiendo que guardas el token en store.token)
+    const isUserLoggedIn = store.token || store.user;
 
     return (
         <div className="container py-5 mt-4">
@@ -171,23 +152,14 @@ export const Single = () => {
                     <h3 className="fw-bold mb-4"><i className="fas fa-comments me-2" style={{color: "#D32F2F"}}></i> Reseñas de la Comunidad</h3>
 
                     {/* Verificación de Login para poder comentar */}
+           
                     {isUserLoggedIn ? (
                         <div className="card shadow-sm p-4 mb-5 rounded-4 border-0 bg-white" style={{ borderLeft: "5px solid #D32F2F !important" }}>
                             <h5 className="fw-bold mb-3">Deja tu puntuación</h5>
                             <div className="d-flex flex-column flex-md-row gap-3">
-                                {/* MODIFICADO: Conectamos los inputs al estado (value y onChange) */}
-                                <input 
-                                    type="number" className="form-control" placeholder="Puntaje (0-100)" max="100" min="0" style={{ maxWidth: "150px" }} 
-                                    value={newScore} onChange={(e) => setNewScore(e.target.value)}
-                                />
-                                <input 
-                                    type="text" className="form-control" placeholder="Escribe tu comentario aquí..." 
-                                    value={newText} onChange={(e) => setNewText(e.target.value)}
-                                />
-                                {/* MODIFICADO: Agregamos el evento onClick para llamar a la función */}
-                                <button onClick={handleSendComment} className="btn btn-primary px-4 fw-bold rounded-3" style={{ backgroundColor: "#D32F2F", border: "none" }}>
-                                    Enviar
-                                </button>
+                                <input type="number" className="form-control" placeholder="Puntaje (0-100)" max="100" min="0" style={{ maxWidth: "150px" }} />
+                                <input type="text" className="form-control" placeholder="Escribe tu comentario aquí..." />
+                                <button className="btn btn-primary px-4 fw-bold rounded-3" style={{ backgroundColor: "#D32F2F", border: "none" }}>Enviar</button>
                             </div>
                         </div>
                     ) : (
@@ -202,29 +174,23 @@ export const Single = () => {
 
                     {/* Lista de Comentarios */}
                     <div className="d-flex flex-column gap-3">
-                        {/* MODIFICADO: Cambiamos mockComments por 'comments' (los reales de la BD) */}
-                        {comments.length === 0 ? (
-                            <p className="text-muted">No hay reseñas aún. ¡Sé el primero!</p>
-                        ) : (
-                            comments.map((c) => {
-                                const cConf = getRankingConfig(c.score);
-                                return (
-                                    <div key={c.id} className="card border-0 shadow-sm p-3 rounded-4 d-flex flex-row align-items-center gap-4 bg-white transition-hover">
-                                        <div 
-                                            className="rounded-circle d-flex justify-content-center align-items-center fw-bold text-white shadow-sm" 
-                                            style={{ width: "60px", height: "60px", backgroundColor: cConf.color, fontSize: "1.2rem", flexShrink: 0 }}
-                                        >
-                                            {c.score}
-                                        </div>
-                                        <div>
-                                            {/* MODIFICADO: Cambiamos c.user por c.username, asumiendo que así lo envías desde models.py */}
-                                            <h6 className="mb-1 fw-bold text-dark">{c.username || "Usuario"}</h6>
-                                            <p className="mb-0 text-secondary">{c.text}</p>
-                                        </div>
+                        {mockComments.map((c) => {
+                            const cConf = getRankingConfig(c.score);
+                            return (
+                                <div key={c.id} className="card border-0 shadow-sm p-3 rounded-4 d-flex flex-row align-items-center gap-4 bg-white transition-hover">
+                                    <div 
+                                        className="rounded-circle d-flex justify-content-center align-items-center fw-bold text-white shadow-sm" 
+                                        style={{ width: "60px", height: "60px", backgroundColor: cConf.color, fontSize: "1.2rem", flexShrink: 0 }}
+                                    >
+                                        {c.score}
                                     </div>
-                                );
-                            })
-                        )}
+                                    <div>
+                                        <h6 className="mb-1 fw-bold text-dark">{c.user}</h6>
+                                        <p className="mb-0 text-secondary">{c.text}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
