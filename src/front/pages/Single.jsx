@@ -81,6 +81,14 @@ export const Single = () => {
                     setComments([...comments, data.comment]); 
                 }
                 setNewScore(""); setNewText("");  
+
+                const respuestaRestaurante = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}`);
+                
+                if (respuestaRestaurante.ok) {
+                    const datosActualizados = await respuestaRestaurante.json();
+                    setRestaurant(datosActualizados);
+                }
+
             } else {
                 alert("Error al enviar el comentario");
             }

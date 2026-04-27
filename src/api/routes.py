@@ -303,6 +303,8 @@ def create_comment(restaurant_id):
     db.session.add(new_comment)
     db.session.commit()
 
+    actualizar_promedio_restaurante(restaurant_id)
+
     return jsonify({"msg": "Comentario creado exitosamente", "comment": new_comment.serialize()}), 201
 
 # -----------------------------------------------------------
@@ -325,7 +327,23 @@ def get_user_comments():
 
 
 
-
+def actualizar_promedio_restaurante(id_restaurante):
+    restaurante = Restaurant.query.get(id_restaurante)
+    if not restaurante:
+        return
+    
+    # Buscar todos los comentarios asociados a este restaurante
+    comentarios = Comment.query.filter_by(restaurant_id=id_restaurante).all()
+    
+    if len(comentarios) > 0:
+        # Sumar todas las puntuaciones y dividir entre la cantidad de comentarios
+        puntaje_total = sum(comentario.score for comentario in comentarios)
+        promedio = puntaje_total / len(comentarios)
+        restaurante.score = round(promedio, 1) # Redondeamos a 1 decimal
+    else:
+        restaurante.score = 0
+        
+    db.session.commit()
 
 
 
