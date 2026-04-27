@@ -254,15 +254,24 @@ export const Profile = () => {
                             <h4 className="text-danger fw-bold mb-0">Mis Reseñas ✍️</h4>
                             <Link to="/" className="btn btn-sm btn-danger rounded-pill px-3">Hacer Reseña</Link>
                         </div>
-                        {profileData.reviews.length > 0 ? (
+                        {profileData.reviews && profileData.reviews.length > 0 ? (
                             <div className="list-group mt-3">
                                 {profileData.reviews.map(review => (
                                     <div key={review.id} className="list-group-item bg-dark text-light border border-secondary mb-3 rounded-3 shadow-sm">
                                         <div className="d-flex w-100 justify-content-between align-items-center mb-2">
-                                            <h5 className="mb-0 fw-bold text-danger">{review.restaurant_name}</h5>
-                                            <span className="fs-5">{"⭐".repeat(review.rating)}</span>
+                                            
+                                            <h5 className="mb-0 fw-bold">
+                                                <span className="text-white">Restaurante: </span>
+                                                <span className="text-danger">
+                                                    {review.restaurant_name.replace(/Restaurante/i, '').trim()}
+                                                </span>
+                                            </h5>
+                                            
+                                            <span className="badge bg-warning text-dark fs-6 rounded-pill">
+                                                {review.score} ⭐
+                                            </span>
                                         </div>
-                                        <p className="mb-0 text-white-50">{review.comment}</p>
+                                        <p className="mb-0 text-white-50">"{review.text}"</p>
                                     </div>
                                 ))}
                             </div>
@@ -270,6 +279,8 @@ export const Profile = () => {
                             <p className="mt-3 text-muted">Aún no has escrito reseñas.</p>
                         )}
                     </div>
+
+
                 </div>
             </div>
         </div>

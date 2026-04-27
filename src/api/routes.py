@@ -193,16 +193,19 @@ def get_single_restaurant(restaurant_id):
 
 @api.route('/profile', methods=['GET'])
 @jwt_required()  # Protegemos la ruta: solo entran usuarios con token
+
 def get_user_profile():
-    # 1. Identificamos quién es el usuario a través de su token
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
 
     if not user:
         return jsonify({"msg": "Usuario no encontrado"}), 404
 
+    # 1. Buscamos las reseñas reales (modelo Comment) de este usuario
+    comentarios_del_usuario = Comment.query.filter_by(user_id=current_user_id).all()
+    review_count = len(comentarios_del_usuario)
+    
     # 2. Lógica de Negocio: Nivel de Usuario
-    review_count = len(user.reviews)
     level = "Novato"
     if review_count >= 15:
         level = "Crítico experto"
@@ -221,8 +224,13 @@ def get_user_profile():
         "user_info": user.serialize(),
         "level": level,
         "badges": badges,
-        # Usamos List Comprehensions para transformar las listas de objetos en JSON
-        "reviews": [review.serialize() for review in user.reviews],
+        "reviews": [{
+            "id": c.id,
+            "text": c.text,
+            "score": c.score,
+            "restaurant_id": c.restaurant_id,
+            "restaurant_name": Restaurant.query.get(c.restaurant_id).name if Restaurant.query.get(c.restaurant_id) else "Restaurante desconocido"
+        } for c in comentarios_del_usuario],
         "favorites": [fav.serialize() for fav in user.favorites],
         "places_to_visit": [place.serialize() for place in user.places_to_visit]
     }), 200
