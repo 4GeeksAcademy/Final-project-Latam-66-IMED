@@ -13,6 +13,7 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { Single } from "./pages/Single"; // Singleview de los restaurentes
 import { Profile } from "./pages/Profile";
 import { Categorias } from "./pages/Categorias";
+import { AboutUs } from "./pages/AboutUs";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -41,6 +42,7 @@ export const router = createBrowserRouter(
       <Route path="admin" element={<AdminDashboard />} />
       <Route path="perfil" element={<Profile />} />
       <Route path="categorias" element={<Categorias />} />
+      <Route path="sobre-nosotros" element={<AboutUs />} />
     </Route>
   )
 );
