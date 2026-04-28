@@ -353,25 +353,6 @@ def actualizar_promedio_restaurante(id_restaurante):
         
     db.session.commit()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Rutas para ver los comentarios 
 
 @api.route('/users', methods=['GET'])
