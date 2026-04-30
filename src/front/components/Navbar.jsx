@@ -85,7 +85,7 @@ export const Navbar = () => {
 
 						{/* DESKTOP MENU (Oculto en d-md-none) */}
 						<div className="d-none d-md-flex align-items-center gap-4">
-							<Link to="/" className="nav-link-custom">Home</Link>
+							<Link to="/" className="nav-link-custom">Inicio</Link>
 							<Link to="/sobre-nosotros" className="nav-link-custom">Sobre Nosotros</Link>
 							<Link to="/categorias" className="nav-link-custom">Categorías</Link>
 
@@ -188,9 +188,9 @@ export const Navbar = () => {
 								</>
 							) : (
 								<>
-									<Link to="/login" className="nav-link-custom">Log-In</Link>
+									<Link to="/login" className="nav-link-custom">Acceder</Link>
 									<Link to="/signup" className="btn btn-fc-red rounded-2 px-4 py-2 fw-medium">
-										Sign-Up
+										Registrarme
 									</Link>
 								</>
 							)}
@@ -234,7 +234,7 @@ export const Navbar = () => {
 				</div>
 
 				<div className="offcanvas-body d-flex flex-column gap-3 mt-2">
-					<Link to="/" onClick={closeMenu} className="nav-link-custom fs-5">Home</Link>
+					<Link to="/" onClick={closeMenu} className="nav-link-custom fs-5">Inicio</Link>
 					<Link to="/sobre-nosotros" onClick={closeMenu} className="nav-link-custom fs-5">Sobre Nosotros</Link>
 					<Link to="/categorias" onClick={closeMenu} className="nav-link-custom fs-5">Categorías</Link>
 
@@ -258,8 +258,8 @@ export const Navbar = () => {
 						</>
 					) : (
 						<>
-							<Link to="/login" onClick={closeMenu} className="nav-link-custom fs-5">Log-In</Link>
-							<Link to="/signup" onClick={closeMenu} className="text-decoration-none text-fc-red fs-5 fw-bold">Sign-Up</Link>
+							<Link to="/login" onClick={closeMenu} className="nav-link-custom fs-5">Acceder</Link>
+							<Link to="/signup" onClick={closeMenu} className="text-decoration-none text-fc-red fs-5 fw-bold">Registrarme</Link>
 						</>
 					)}
 

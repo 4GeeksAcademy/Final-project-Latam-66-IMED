@@ -20,10 +20,10 @@ export const Footer = () => {
 
           {/* COLUMNA 2: OVERVIEW (ENLACES) */}
           <div className="col-6 col-md-4">
-            <h5 className="footer-title">Overview</h5>
+            <h5 className="footer-title">Enlaces Rápidos</h5>
             <ul className="list-unstyled d-flex flex-column gap-2">
               <li>
-                <Link to="/" className="footer-link">Home</Link>
+                <Link to="/" className="footer-link">Inicio</Link>
               </li>
               <li>
                 <Link to="/categorias" className="footer-link">Categorías</Link>
@@ -39,7 +39,7 @@ export const Footer = () => {
 
           {/* COLUMNA 3: FOLLOW US (REDES SOCIALES) */}
           <div className="col-6 col-md-4">
-            <h5 className="footer-title">Follow Us</h5>
+            <h5 className="footer-title">Síguenos</h5>
             <div className="d-flex gap-4">
               {/* INSTAGRAM */}
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">

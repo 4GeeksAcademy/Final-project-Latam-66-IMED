@@ -56,7 +56,7 @@ export const Login = () => {
                 <div className="card-body p-5">
                     <div className="text-center mb-4">
                         <h2 className="fw-bold">
-                            <span className="text-fc-red">Log</span> In
+                            <span className="text-fc-red">Acceder</span>
                         </h2>
                         <p className="text-secondary small">Bienvenido de vuelta a FlavorCritic</p>
                     </div>
