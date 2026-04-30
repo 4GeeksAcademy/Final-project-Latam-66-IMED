@@ -46,9 +46,24 @@ export const Home = () => {
     
     // --- EXTRACCIÓN DINÁMICA PARA LOS FILTROS ---
     const uniqueCountries = [...new Set(restaurantsList.map(r => r.country).filter(Boolean))].sort();
-    const uniqueCities = [...new Set(restaurantsList.map(r => r.city).filter(Boolean))].sort();
+    
+    // MODIFICACIÓN: Ciudades condicionales según el país seleccionado
+    const uniqueCities = [...new Set(restaurantsList
+        .filter(r => searchCountry === "" || r.country === searchCountry)
+        .map(r => r.city)
+        .filter(Boolean)
+    )].sort();
+    
     const uniqueFoodTypes = [...new Set(restaurantsList.map(r => r.food_type).filter(Boolean))].sort();
     const uniqueOrigins = [...new Set(restaurantsList.map(r => r.cuisine_origin).filter(Boolean))].sort();
+
+    // MODIFICACIÓN: Función helper para los contadores dinámicos
+    const getOptionCount = (key, value) => {
+        if (key === "city" && searchCountry !== "") {
+            return restaurantsList.filter(r => r[key] === value && r.country === searchCountry).length;
+        }
+        return restaurantsList.filter(r => r[key] === value).length;
+    };
 
     // --- LÓGICA DE FILTRADO ---
     const filteredRestaurants = restaurantsList.filter((rest) => {
@@ -103,28 +118,50 @@ export const Home = () => {
                     </div>
                 </div>
 
-                {/* --- BARRA DE FILTROS COMPACTA --- */}
+               {/* --- BARRA DE FILTROS COMPACTA --- */}
                 <div className="card shadow-sm p-3 mb-5 bg-white rounded-4 border-0">
                     <h6 className="mb-3 fw-bold text-secondary">
                         <i className="fas fa-filter me-2"></i>Filtra tu antojo
                     </h6>
-                    {/* g-2 reduce el espacio en mobile, g-md-3 lo restaura en PC */}
-                    <div className="row g-2 g-md-3">
+                    <div className="row g-2 g-md-3 align-items-end">
                         
-                        {/* Nombre (Ahora es col-6 en móvil) */}
-                        <div className="col-6 col-md-4">
+                        {/* Búsqueda */}
+                        <div className="col-12 col-sm-6 col-md-4">
+                            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: "0.8rem" }}>Buscar</label>
                             <input 
                                 type="text" 
                                 className="form-control form-control-sm bg-light border-0" 
-                                placeholder="Buscar..." 
+                                placeholder="Nombre o comida..." 
                                 value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)} 
                                 style={{ fontSize: "0.85rem" }}
                             />
                         </div>
+
+                        {/* País */}
+                        <div className="col-12 col-sm-6 col-md-4">
+                            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: "0.8rem" }}>País</label>
+                            <select 
+                                className="form-select form-select-sm bg-light border-0" 
+                                value={searchCountry} 
+                                onChange={(e) => {
+                                    setSearchCountry(e.target.value);
+                                    setSearchCity(""); // Resetea la ciudad al cambiar de país
+                                }}
+                                style={{ fontSize: "0.85rem" }} 
+                            >
+                                <option value="">Cualquier País</option>
+                                {uniqueCountries.map((country, index) => (
+                                    <option key={index} value={country}>
+                                        {country} ({getOptionCount("country", country)})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         
                         {/* Ciudad */}
-                        <div className="col-6 col-md-4">
+                        <div className="col-12 col-sm-6 col-md-4">
+                            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: "0.8rem" }}>Ciudad</label>
                             <select 
                                 className="form-select form-select-sm bg-light border-0" 
                                 value={searchCity} 
@@ -133,28 +170,16 @@ export const Home = () => {
                             >
                                 <option value="">Cualquier Ciudad</option>
                                 {uniqueCities.map((city, index) => (
-                                    <option key={index} value={city}>{city}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* País */}
-                        <div className="col-6 col-md-4">
-                            <select 
-                                className="form-select form-select-sm bg-light border-0" 
-                                value={searchCountry} 
-                                onChange={(e) => setSearchCountry(e.target.value)}
-                                style={{ fontSize: "0.85rem" }} 
-                            >
-                                <option value="">Cualquier País</option>
-                                {uniqueCountries.map((country, index) => (
-                                    <option key={index} value={country}>{country}</option>
+                                    <option key={index} value={city}>
+                                        {city} ({getOptionCount("city", city)})
+                                    </option>
                                 ))}
                             </select>
                         </div>
 
                         {/* Tipo de Comida */}
-                        <div className="col-6 col-md-4">
+                        <div className="col-12 col-sm-6 col-md-4">
+                            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: "0.8rem" }}>Tipo de Comida</label>
                             <select 
                                 className="form-select form-select-sm bg-light border-0" 
                                 value={foodType} 
@@ -163,13 +188,16 @@ export const Home = () => {
                             >
                                 <option value="">Cualquier Comida</option>
                                 {uniqueFoodTypes.map((type, index) => (
-                                    <option key={index} value={type}>{type}</option>
+                                    <option key={index} value={type}>
+                                        {type} ({getOptionCount("food_type", type)})
+                                    </option>
                                 ))}
                             </select>
                         </div>
 
                         {/* Origen Culinario */}
-                        <div className="col-6 col-md-4">
+                        <div className="col-12 col-sm-6 col-md-4">
+                            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: "0.8rem" }}>Origen de Comida</label>
                             <select 
                                 className="form-select form-select-sm bg-light border-0" 
                                 value={origin} 
@@ -178,13 +206,16 @@ export const Home = () => {
                             >
                                 <option value="">Cualquier Origen</option>
                                 {uniqueOrigins.map((org, index) => (
-                                    <option key={index} value={org}>{org}</option>
+                                    <option key={index} value={org}>
+                                        {org} ({getOptionCount("cuisine_origin", org)})
+                                    </option>
                                 ))}
                             </select>
                         </div>
 
                         {/* Rating */}
-                        <div className="col-6 col-md-4">
+                        <div className="col-12 col-sm-6 col-md-4">
+                            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: "0.8rem" }}>Rating</label>
                             <select 
                                 className="form-select form-select-sm bg-light border-0" 
                                 value={minScore} 
@@ -195,6 +226,7 @@ export const Home = () => {
                                 <option value={90}>Excelente (90+)</option>
                                 <option value={80}>Muy Bueno (80+)</option>
                                 <option value={60}>Aceptable (60+)</option>
+                                <option value={10}>Malo (10+)</option>
                             </select>
                         </div>
                     </div>
