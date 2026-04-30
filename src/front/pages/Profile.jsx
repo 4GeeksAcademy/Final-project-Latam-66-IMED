@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export const Profile = () => {
     const [profileData, setProfileData] = useState(null);
@@ -54,9 +55,13 @@ export const Profile = () => {
                 } else {
                     sessionStorage.removeItem("token");
                     navigate("/login");
+                    // ALERTA SI LA SESIÓN EXPIRÓ
+                    toast.error("Tu sesión ha expirado, vuelve a iniciar sesión 🔒");
                 }
             } catch (error) {
                 console.error("Error de conexión", error);
+                // ALERTA DE ERROR DE RED
+                toast.error("Error al cargar tu perfil 🔌");
             } finally {
                 setLoading(false);
             }
@@ -83,6 +88,10 @@ export const Profile = () => {
 
     const handleUpdateProfile = async () => {
         const token = sessionStorage.getItem("token");
+
+        // Opcional: mostrar un toast de "Guardando..."
+        const loadingToast = toast.loading("Guardando cambios... ⏳");
+
         try {
             const bodyData = {
                 email: formData.email,
@@ -106,12 +115,14 @@ export const Profile = () => {
             });
 
             const data = await response.json();
+            // Quitamos el toast de "Cargando..."
+            toast.dismiss(loadingToast);
 
             if (response.ok) {
-                // 1. Actualizamos profileData para la vista de lectura (Modo No-Edición)
+                // Actualizamos profileData para la vista de lectura (Modo No-Edición)
                 setProfileData((prev) => ({ ...prev, user_info: data.user_info }));
 
-                // 2. IMPORTANTE: Forzamos la actualización del formulario con los nombres correctos
+                // IMPORTANTE: Forzamos la actualización del formulario con los nombres correctos
                 // Usamos lo que nos devolvió el servidor para asegurar sincronía total
                 setFormData({
                     email: data.user_info.email || "",
@@ -129,15 +140,16 @@ export const Profile = () => {
 
                 // 4. Pequeña pausa antes del alert para que React procese los cambios visuales
                 setTimeout(() => {
-                    alert("¡Perfil actualizado con éxito!");
+                    toast.success("¡Perfil actualizado con éxito! ✨");
                 }, 100);
 
             } else {
-                alert(`Error: ${data.msg}`);
+                toast.error(data.msg || "Error al actualizar el perfil ❌");
             }
         } catch (error) {
             console.error("Error al actualizar", error);
-            alert("Error de conexión");
+            toast.dismiss(loadingToast);
+            toast.error("Error de conexión con el servidor 🔌");
         }
     };
 
@@ -259,14 +271,14 @@ export const Profile = () => {
                                 {profileData.reviews.map(review => (
                                     <div key={review.id} className="list-group-item bg-dark text-light border border-secondary mb-3 rounded-3 shadow-sm">
                                         <div className="d-flex w-100 justify-content-between align-items-center mb-2">
-                                            
+
                                             <h5 className="mb-0 fw-bold">
                                                 <span className="text-white">Restaurante: </span>
                                                 <span className="text-danger">
                                                     {review.restaurant_name.replace(/Restaurante/i, '').trim()}
                                                 </span>
                                             </h5>
-                                            
+
                                             <span className="badge bg-warning text-dark fs-6 rounded-pill">
                                                 {review.score} ⭐
                                             </span>
