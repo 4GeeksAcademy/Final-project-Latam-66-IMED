@@ -279,74 +279,125 @@ export const AdminDashboard = () => {
         }
     };
 
-    const handleBulkDelete = async () => {
+    // LÓGICA DE LA ELIMINACIÓN MASIVA CON TOAST DE CONFIRMACIÓN
+    const handleBulkDelete = () => {
         if (selectedIds.length === 0) return;
-        if (!window.confirm(`¿Estás seguro de eliminar ${selectedIds.length} restaurantes de forma permanente?`)) return;
 
-        setIsDeletingBulk(true);
-        const token = sessionStorage.getItem("token");
+        toast((t) => (
+            <div className="bg-dark text-light p-4 rounded-4 border border-danger shadow-lg d-flex flex-column align-items-center text-center">
+                <i className="fas fa-exclamation-triangle text-danger fs-1 mb-3"></i>
+                <h5 className="fw-bold mb-3">¿Eliminar {selectedIds.length} restaurantes?</h5>
+                <p className="text-white-50 small mb-4">Esta acción no se puede deshacer y borrará sus dependencias.</p>
+                <div className="d-flex gap-3 w-100 justify-content-center">
+                    <button
+                        className="btn btn-danger fw-bold rounded-pill px-4"
+                        onClick={async () => {
+                            toast.dismiss(t.id); // Cerramos el toast de confirmación
+                            setIsDeletingBulk(true);
+                            const token = sessionStorage.getItem("token");
 
-        const deleteBulkPromise = new Promise(async (resolve, reject) => {
-            try {
-                const deletePromises = selectedIds.map(id =>
-                    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
-                        method: "DELETE",
-                        headers: { "Authorization": `Bearer ${token}` }
-                    })
-                );
+                            const deleteBulkPromise = new Promise(async (resolve, reject) => {
+                                try {
+                                    const deletePromises = selectedIds.map(id =>
+                                        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
+                                            method: "DELETE",
+                                            headers: { "Authorization": `Bearer ${token}` }
+                                        })
+                                    );
 
-                const responses = await Promise.all(deletePromises);
-                const failedResponses = responses.filter(resp => !resp.ok);
+                                    const responses = await Promise.all(deletePromises);
+                                    const failedResponses = responses.filter(resp => !resp.ok);
 
-                if (failedResponses.length > 0) {
-                    reject(`Fallaron ${failedResponses.length} eliminaciones`);
-                } else {
-                    resolve();
-                }
-            } catch (error) {
-                reject("Error de red");
-            }
-        });
+                                    if (failedResponses.length > 0) {
+                                        reject(`Fallaron ${failedResponses.length} eliminaciones`);
+                                    } else {
+                                        resolve();
+                                    }
+                                } catch (error) {
+                                    reject("Error de red");
+                                }
+                            });
 
-        toast.promise(deleteBulkPromise, {
-            loading: 'Eliminando restaurantes... 🔥',
-            success: `¡Limpiaste ${selectedIds.length} restaurantes! 🗑️`,
-            error: (err) => `Error: ${err} ❌`
-        }).then(() => {
-            setSelectedIds([]);
-            fetchAdminRestaurants();
-        }).finally(() => {
-            setIsDeletingBulk(false);
+                            toast.promise(deleteBulkPromise, {
+                                loading: 'Eliminando restaurantes... 🔥',
+                                success: `¡Limpiaste ${selectedIds.length} restaurantes! 🗑️`,
+                                error: (err) => `Error: ${err} ❌`
+                            }).then(() => {
+                                setSelectedIds([]);
+                                fetchAdminRestaurants();
+                            }).finally(() => {
+                                setIsDeletingBulk(false);
+                            });
+                        }}
+                    >
+                        Sí, eliminar
+                    </button>
+                    <button
+                        className="btn btn-outline-light fw-bold rounded-pill px-4"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: Infinity, // Hace que el toast no se cierre solo hasta que el usuario elija
+            style: { background: "transparent", boxShadow: "none", padding: 0 } // Oculta el fondo por defecto del toast
         });
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm("¿Seguro que quieres eliminar este restaurante permanentemente?")) {
-            const token = sessionStorage.getItem("token");
 
-            const deleteSinglePromise = new Promise(async (resolve, reject) => {
-                try {
-                    const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
-                        method: "DELETE",
-                        headers: { "Authorization": `Bearer ${token}` }
-                    });
+    const handleDelete = (id) => {
+        toast((t) => (
+            <div className="bg-dark text-light p-4 rounded-4 border border-danger shadow-lg d-flex flex-column align-items-center text-center">
+                <i className="fas fa-exclamation-triangle text-danger fs-1 mb-3"></i>
+                <h5 className="fw-bold mb-3">¿Eliminar este restaurante?</h5>
+                <p className="text-white-50 small mb-4">Se borrará permanentemente de la base de datos.</p>
+                <div className="d-flex gap-3 w-100 justify-content-center">
+                    <button
+                        className="btn btn-danger fw-bold rounded-pill px-4"
+                        onClick={() => {
+                            toast.dismiss(t.id); // Cerramos el toast de confirmación
+                            const token = sessionStorage.getItem("token");
 
-                    if (resp.ok) resolve();
-                    else reject();
-                } catch (error) {
-                    reject();
-                }
-            });
+                            const deleteSinglePromise = new Promise(async (resolve, reject) => {
+                                try {
+                                    const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
+                                        method: "DELETE",
+                                        headers: { "Authorization": `Bearer ${token}` }
+                                    });
 
-            toast.promise(deleteSinglePromise, {
-                loading: 'Eliminando...',
-                success: 'Restaurante eliminado permanentemente 🗑️',
-                error: 'Error al eliminar el restaurante ❌'
-            }).then(() => {
-                dispatch({ type: "delete_restaurant", payload: id });
-                setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
-            }).catch(() => console.error("Fallo al borrar"));
-        }
+                                    if (resp.ok) resolve();
+                                    else reject();
+                                } catch (error) {
+                                    reject();
+                                }
+                            });
+
+                            toast.promise(deleteSinglePromise, {
+                                loading: 'Eliminando...',
+                                success: 'Restaurante eliminado permanentemente 🗑️',
+                                error: 'Error al eliminar el restaurante ❌'
+                            }).then(() => {
+                                dispatch({ type: "delete_restaurant", payload: id });
+                                setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+                            }).catch(() => console.error("Fallo al borrar"));
+                        }}
+                    >
+                        Sí, eliminar
+                    </button>
+                    <button
+                        className="btn btn-outline-light fw-bold rounded-pill px-4"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: Infinity, // Lo mismo, no se cierra hasta hacer click
+            style: { background: "transparent", boxShadow: "none", padding: 0 }
+        });
     };
 
     const handleEditClick = (restaurant) => {
