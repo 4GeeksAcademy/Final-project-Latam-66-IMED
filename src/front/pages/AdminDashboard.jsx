@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+// 1. IMPORTAMOS TOAST
+import toast from "react-hot-toast";
 
 export const AdminDashboard = () => {
     const { store, dispatch } = useGlobalReducer();
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
 
     const initialFormState = {
-        name: "", image_url: "", score: 0, food_type: "", cuisine_origin: "", 
-        country: "", city: "", description: "" 
+        name: "", image_url: "", score: 0, food_type: "", cuisine_origin: "",
+        country: "", city: "", description: ""
     };
 
     const [formData, setFormData] = useState(initialFormState);
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
-    
+
     // Estados para Filtros del Dashboard
     const [filterName, setFilterName] = useState("");
     const [filterType, setFilterType] = useState("");
@@ -29,7 +31,7 @@ export const AdminDashboard = () => {
     const [defaultBulkScore, setDefaultBulkScore] = useState(0);
 
     // Estados para la Eliminación Masiva (Checkboxes) 
-    const [selectedIds, setSelectedIds] = useState([]); 
+    const [selectedIds, setSelectedIds] = useState([]);
     const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
     // ====================================================================
@@ -46,7 +48,7 @@ export const AdminDashboard = () => {
 
         if (!token || role !== "admin") {
             navigate("/");
-            return; 
+            return;
         }
 
         if (!store.restaurants || store.restaurants.length === 0) {
@@ -54,7 +56,7 @@ export const AdminDashboard = () => {
         }
         // Llamamos también a los usuarios
         fetchAdminUsers();
-    }, []); 
+    }, []);
 
     const fetchAdminRestaurants = async () => {
         try {
@@ -65,6 +67,7 @@ export const AdminDashboard = () => {
             }
         } catch (error) {
             console.error("Error cargando restaurantes:", error);
+            toast.error("Error de conexión al cargar restaurantes 🔌");
         }
     };
 
@@ -81,6 +84,7 @@ export const AdminDashboard = () => {
             }
         } catch (error) {
             console.error("Error cargando usuarios:", error);
+            toast.error("Error al cargar la lista de usuarios");
         }
     };
 
@@ -96,6 +100,7 @@ export const AdminDashboard = () => {
             }
         } catch (error) {
             console.error("Error cargando comentarios:", error);
+            toast.error("Error al cargar las reseñas del usuario");
         }
     };
 
@@ -109,7 +114,7 @@ export const AdminDashboard = () => {
     );
 
     // ====================================================================
-    // 🌟 CONTROLADORES DE LOS BOTONES SUPERIORES (Corrección de choques)
+    // 🌟 CONTROLADORES DE LOS BOTONES SUPERIORES
     // ====================================================================
     const handleCreateClick = () => {
         if (showForm && !editingId) {
@@ -131,7 +136,7 @@ export const AdminDashboard = () => {
         }
     };
 
-    // MANEJO DE FORMULARIO INDIVIDUAL
+    // MANEJO DE FORMULARIO INDIVIDUAL CON TOAST PROMISE
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -139,40 +144,48 @@ export const AdminDashboard = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const token = sessionStorage.getItem("token");
-        const url = editingId 
+        const url = editingId
             ? `${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${editingId}`
             : `${import.meta.env.VITE_BACKEND_URL}/api/restaurants`;
         const method = editingId ? "PUT" : "POST";
 
-        try {
-            const resp = await fetch(url, {
-                method: method,
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify(formData)
-            });
+        const savePromise = new Promise(async (resolve, reject) => {
+            try {
+                const resp = await fetch(url, {
+                    method: method,
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify(formData)
+                });
 
-            if (resp.ok) {
-                const data = await resp.json();
-                if (editingId) {
-                    dispatch({ type: "update_restaurant", payload: data.restaurant });
-                    alert("Restaurante actualizado");
+                if (resp.ok) {
+                    const data = await resp.json();
+                    resolve(data);
                 } else {
-                    dispatch({ type: "add_restaurant", payload: data.restaurant });
-                    alert("Restaurante creado");
+                    const errorData = await resp.json();
+                    reject(errorData.msg || "No se pudo guardar");
                 }
-                setFormData(initialFormState);
-                setEditingId(null);
-                setShowForm(false);
-            } else {
-                const errorData = await resp.json();
-                alert(`Error: ${errorData.msg || "No se pudo guardar"}`);
+            } catch (error) {
+                reject("Error de red");
             }
-        } catch (error) {
-            console.error("Error:", error);
-        }
+        });
+
+        toast.promise(savePromise, {
+            loading: editingId ? 'Actualizando...' : 'Creando restaurante...',
+            success: editingId ? '¡Restaurante actualizado con éxito! ✨' : '¡Restaurante creado con éxito! 🍽️',
+            error: (err) => `Error: ${err} ❌`
+        }).then((data) => {
+            if (editingId) {
+                dispatch({ type: "update_restaurant", payload: data.restaurant });
+            } else {
+                dispatch({ type: "add_restaurant", payload: data.restaurant });
+            }
+            setFormData(initialFormState);
+            setEditingId(null);
+            setShowForm(false);
+        }).catch(err => console.error(err));
     };
 
-    // LÓGICA DE CARGA MASIVA (Excel)
+    // LÓGICA DE CARGA MASIVA (Excel) CON TOAST PROMISE
     useEffect(() => {
         if (!bulkText.trim()) {
             setBulkPreview([]);
@@ -184,7 +197,7 @@ export const AdminDashboard = () => {
             const rowId = cols[0]?.trim();
             const rowScore = cols[3]?.trim();
             return {
-                id: rowId !== "" ? rowId : null, 
+                id: rowId !== "" ? rowId : null,
                 name: cols[1]?.trim() || "",
                 image_url: cols[2]?.trim() || "",
                 score: rowScore !== "" && rowScore !== undefined ? parseInt(rowScore) : parseInt(defaultBulkScore),
@@ -194,54 +207,61 @@ export const AdminDashboard = () => {
                 city: cols[7]?.trim() || "",
                 description: cols[8]?.trim() || ""
             };
-        }).filter(r => r.name !== ""); 
+        }).filter(r => r.name !== "");
         setBulkPreview(parsedData);
-    }, [bulkText, defaultBulkScore]); 
+    }, [bulkText, defaultBulkScore]);
 
     const handleBulkSubmit = async () => {
         if (bulkPreview.length === 0) return;
         setIsSubmittingBulk(true);
         const token = sessionStorage.getItem("token");
 
-        try {
-            const promises = bulkPreview.map(rest => {
-                const isUpdate = rest.id !== null;
-                const url = isUpdate 
-                    ? `${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${rest.id}` 
-                    : `${import.meta.env.VITE_BACKEND_URL}/api/restaurants`;
-                const method = isUpdate ? "PUT" : "POST";
-                const { id, ...bodyData } = rest;
+        const bulkPromise = new Promise(async (resolve, reject) => {
+            try {
+                const promises = bulkPreview.map(rest => {
+                    const isUpdate = rest.id !== null;
+                    const url = isUpdate
+                        ? `${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${rest.id}`
+                        : `${import.meta.env.VITE_BACKEND_URL}/api/restaurants`;
+                    const method = isUpdate ? "PUT" : "POST";
+                    const { id, ...bodyData } = rest;
 
-                return fetch(url, {
-                    method: method,
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                    body: JSON.stringify(bodyData)
+                    return fetch(url, {
+                        method: method,
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                        body: JSON.stringify(bodyData)
+                    });
                 });
-            });
 
-            const responses = await Promise.all(promises);
-            const failedResponses = responses.filter(resp => !resp.ok);
+                const responses = await Promise.all(promises);
+                const failedResponses = responses.filter(resp => !resp.ok);
 
-            if (failedResponses.length > 0) {
-                const errorCode = failedResponses[0].status;
-                if (errorCode === 401) alert("Error 401: Sesión expirada.");
-                else alert(`Error (${errorCode}). Revisar consola.`);
-            } else {
-                alert(`¡Éxito! Se han procesado ${bulkPreview.length} restaurantes.`);
-                setBulkText("");
-                setShowBulk(false);
-                fetchAdminRestaurants(); 
+                if (failedResponses.length > 0) {
+                    const errorCode = failedResponses[0].status;
+                    if (errorCode === 401) reject("Sesión expirada 🔒");
+                    else reject(`Error HTTP ${errorCode}`);
+                } else {
+                    resolve();
+                }
+            } catch (error) {
+                reject("Error de conexión 🔌");
             }
-        } catch (error) {
-            console.error("Error masivo:", error);
-            alert("Error de red.");
-        } finally {
+        });
+
+        toast.promise(bulkPromise, {
+            loading: 'Procesando carga masiva en BD... ⏳',
+            success: `¡Éxito! Se procesaron ${bulkPreview.length} restaurantes 🚀`,
+            error: (err) => `Error: ${err}`
+        }).then(() => {
+            setBulkText("");
+            setShowBulk(false);
+            fetchAdminRestaurants();
+        }).finally(() => {
             setIsSubmittingBulk(false);
-        }
+        });
     };
 
-
-    // LÓGICA DE LOS CHECKBOXES Y ELIMINACIÓN MASIVA
+    // LÓGICA DE LOS CHECKBOXES Y ELIMINACIÓN MASIVA CON TOAST PROMISE
     const handleSelectOne = (id) => {
         if (selectedIds.includes(id)) {
             setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
@@ -260,56 +280,72 @@ export const AdminDashboard = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (selectedIds.length === 0) return; 
+        if (selectedIds.length === 0) return;
         if (!window.confirm(`¿Estás seguro de eliminar ${selectedIds.length} restaurantes de forma permanente?`)) return;
 
         setIsDeletingBulk(true);
         const token = sessionStorage.getItem("token");
 
-        try {
-            const deletePromises = selectedIds.map(id => 
-                fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
-                    method: "DELETE",
-                    headers: { "Authorization": `Bearer ${token}` }
-                })
-            );
+        const deleteBulkPromise = new Promise(async (resolve, reject) => {
+            try {
+                const deletePromises = selectedIds.map(id =>
+                    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
+                        method: "DELETE",
+                        headers: { "Authorization": `Bearer ${token}` }
+                    })
+                );
 
-            const responses = await Promise.all(deletePromises);
-            const failedResponses = responses.filter(resp => !resp.ok);
+                const responses = await Promise.all(deletePromises);
+                const failedResponses = responses.filter(resp => !resp.ok);
 
-            if (failedResponses.length > 0) {
-                alert(`Error. No se pudieron eliminar ${failedResponses.length} restaurantes.`);
-            } else {
-                alert(`¡Éxito! Limpiaste ${selectedIds.length} restaurantes.`);
-                setSelectedIds([]);
-                fetchAdminRestaurants();
+                if (failedResponses.length > 0) {
+                    reject(`Fallaron ${failedResponses.length} eliminaciones`);
+                } else {
+                    resolve();
+                }
+            } catch (error) {
+                reject("Error de red");
             }
-        } catch (error) {
-            console.error("Error en eliminación masiva:", error);
-            alert("Ocurrió un error de conexión.");
-        } finally {
+        });
+
+        toast.promise(deleteBulkPromise, {
+            loading: 'Eliminando restaurantes... 🔥',
+            success: `¡Limpiaste ${selectedIds.length} restaurantes! 🗑️`,
+            error: (err) => `Error: ${err} ❌`
+        }).then(() => {
+            setSelectedIds([]);
+            fetchAdminRestaurants();
+        }).finally(() => {
             setIsDeletingBulk(false);
-        }
+        });
     };
 
     const handleDelete = async (id) => {
         if (window.confirm("¿Seguro que quieres eliminar este restaurante permanentemente?")) {
             const token = sessionStorage.getItem("token");
-            try {
-                const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
-                    method: "DELETE",
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
 
-                if (resp.ok) {
-                    dispatch({ type: "delete_restaurant", payload: id });
-                    setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
-                } else {
-                    alert(`Error al eliminar`);
+            const deleteSinglePromise = new Promise(async (resolve, reject) => {
+                try {
+                    const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${id}`, {
+                        method: "DELETE",
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+
+                    if (resp.ok) resolve();
+                    else reject();
+                } catch (error) {
+                    reject();
                 }
-            } catch (error) {
-                console.error("Error eliminando:", error);
-            }
+            });
+
+            toast.promise(deleteSinglePromise, {
+                loading: 'Eliminando...',
+                success: 'Restaurante eliminado permanentemente 🗑️',
+                error: 'Error al eliminar el restaurante ❌'
+            }).then(() => {
+                dispatch({ type: "delete_restaurant", payload: id });
+                setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+            }).catch(() => console.error("Fallo al borrar"));
         }
     };
 
@@ -320,7 +356,7 @@ export const AdminDashboard = () => {
             country: restaurant.country || "", city: restaurant.city, description: restaurant.description || ""
         });
         setEditingId(restaurant.id);
-        setShowBulk(false); 
+        setShowBulk(false);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -329,7 +365,7 @@ export const AdminDashboard = () => {
 
     return (
         <div className="container-fluid min-vh-100 p-4" style={{ backgroundColor: "#1e1e1e", color: "#f8f9fa" }}>
-            
+
             {/* Header y Contadores Destacados */}
             <div className="row align-items-center mb-4 bg-dark p-4 rounded-4 shadow">
                 <div className="col-12 col-md-6 mb-3 mb-md-0">
@@ -347,18 +383,18 @@ export const AdminDashboard = () => {
                         )}
                     </div>
                 </div>
-                
+
                 <div className="col-12 col-md-6 text-md-end d-flex gap-2 justify-content-md-end flex-wrap align-items-center">
-                    
+
                     {/* TOGGLE PESTAÑAS */}
                     <div className="btn-group bg-secondary rounded-pill p-1 me-md-2 w-100 w-md-auto mb-2 mb-md-0">
-                        <button 
+                        <button
                             className={`btn btn-sm rounded-pill px-4 fw-bold ${activeTab === "restaurants" ? "btn-light text-dark" : "text-white"}`}
                             onClick={() => setActiveTab("restaurants")}
                         >
                             Restaurantes
                         </button>
-                        <button 
+                        <button
                             className={`btn btn-sm rounded-pill px-4 fw-bold ${activeTab === "users" ? "btn-light text-dark" : "text-white"}`}
                             onClick={() => setActiveTab("users")}
                         >
@@ -404,8 +440,8 @@ export const AdminDashboard = () => {
                                         <td className="px-4 text-info fw-bold">#{u.id}</td>
                                         <td className="fw-bold text-white">
                                             {/* ENLACE PARA ABRIR MODAL DE COMENTARIOS */}
-                                            <span 
-                                                className="text-primary" 
+                                            <span
+                                                className="text-primary"
                                                 style={{ cursor: "pointer", textDecoration: "underline" }}
                                                 onClick={() => viewUserComments(u)}
                                             >
@@ -433,37 +469,37 @@ export const AdminDashboard = () => {
             )}
 
             {/* =========================================================
-                VISTA DE RESTAURANTES (TU CÓDIGO INTACTO)
+                VISTA DE RESTAURANTES 
             ========================================================= */}
             {activeTab === "restaurants" && (
                 <div className="animate__animated animate__fadeIn">
-                    {/* FORMULARIO DE CARGA MASIVA (EXCEL) - Textos muy legibles */}
+                    {/* FORMULARIO DE CARGA MASIVA (EXCEL) */}
                     {showBulk && (
                         <div className="card bg-dark text-light border-secondary mb-4 p-4 shadow rounded-4 border-2" style={{ borderColor: "#D32F2F !important" }}>
                             <h3 className="text-warning fw-bold mb-3"><i className="fas fa-bolt me-2"></i>Edición y Carga Masiva (Excel)</h3>
-                            
+
                             <div className="alert alert-secondary text-dark border-0 mb-4 fw-semibold">
                                 <p className="mb-2"><b>Instrucciones:</b> Copia y pega desde tu Excel con este orden exacto de columnas:</p>
                                 <p className="mb-0 font-monospace text-danger bg-light p-2 rounded">
                                     ID (Dejar vacío para crear) | Nombre | URL Imagen | Score | Tipo Comida | Origen | País | Ciudad | Descripción
                                 </p>
                             </div>
-                            
+
                             <div className="mb-3 d-flex align-items-center gap-3">
                                 <label className="fw-bold text-light text-nowrap">Score (Rating) por Defecto:</label>
-                                <input 
-                                    type="number" 
-                                    className="form-control bg-secondary text-white fw-bold border-0" 
+                                <input
+                                    type="number"
+                                    className="form-control bg-secondary text-white fw-bold border-0"
                                     style={{ width: "100px" }}
-                                    value={defaultBulkScore} 
-                                    onChange={(e) => setDefaultBulkScore(e.target.value)} 
+                                    value={defaultBulkScore}
+                                    onChange={(e) => setDefaultBulkScore(e.target.value)}
                                 />
                                 <span className="text-light">Se aplicará si dejas la columna de score vacía en el Excel.</span>
                             </div>
 
-                            <textarea 
-                                className="form-control bg-secondary text-white fw-bold border-0 mb-3 font-monospace" 
-                                rows="6" 
+                            <textarea
+                                className="form-control bg-secondary text-white fw-bold border-0 mb-3 font-monospace"
+                                rows="6"
                                 placeholder="Pega tus datos aquí..."
                                 value={bulkText}
                                 onChange={(e) => setBulkText(e.target.value)}
@@ -484,8 +520,8 @@ export const AdminDashboard = () => {
                                                 {bulkPreview.map((r, i) => (
                                                     <tr key={i}>
                                                         <td>
-                                                            {r.id 
-                                                                ? <span className="badge bg-warning text-dark">📝 Actualizar (ID: {r.id})</span> 
+                                                            {r.id
+                                                                ? <span className="badge bg-warning text-dark">📝 Actualizar (ID: {r.id})</span>
                                                                 : <span className="badge bg-success">✨ Nuevo</span>}
                                                         </td>
                                                         <td>{r.name}</td>
@@ -498,8 +534,8 @@ export const AdminDashboard = () => {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <button 
-                                        className="btn btn-success mt-3 fw-bold px-4" 
+                                    <button
+                                        className="btn btn-success mt-3 fw-bold px-4"
                                         onClick={handleBulkSubmit}
                                         disabled={isSubmittingBulk}
                                     >
@@ -510,7 +546,7 @@ export const AdminDashboard = () => {
                         </div>
                     )}
 
-                    {/* FORMULARIO INDIVIDUAL - Cero text-muted, todo text-light */}
+                    {/* FORMULARIO INDIVIDUAL */}
                     {showForm && (
                         <div className="card bg-dark text-light border-secondary mb-4 p-4 shadow rounded-4">
                             <h3 className="mb-4 fw-bold" style={{ color: "#D32F2F" }}>{editingId ? "Editar Restaurante" : "Nuevo Restaurante"}</h3>
@@ -536,7 +572,7 @@ export const AdminDashboard = () => {
                                         <label className="form-label text-light fs-8 fw-bold">Origen (Cocina)</label>
                                         <input type="text" name="cuisine_origin" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Italiana" value={formData.cuisine_origin} onChange={handleChange} required />
                                     </div>
-                                    
+
                                     <div className="col-md-6">
                                         <label className="form-label text-light fs-8 fw-bold">País</label>
                                         <input type="text" name="country" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Venezuela" value={formData.country} onChange={handleChange} required />
@@ -545,7 +581,7 @@ export const AdminDashboard = () => {
                                         <label className="form-label text-light fs-8 fw-bold">Ciudad</label>
                                         <input type="text" name="city" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Caracas" value={formData.city} onChange={handleChange} required />
                                     </div>
-                                    
+
                                     <div className="col-12">
                                         <label className="form-label text-light fs-8 fw-bold">Descripción</label>
                                         <textarea name="description" className="form-control bg-secondary text-white fw-bold border-0" rows="3" value={formData.description} onChange={handleChange}></textarea>
@@ -567,9 +603,9 @@ export const AdminDashboard = () => {
                     <div className="row g-3 mb-4 bg-dark p-4 rounded-4 shadow-sm">
                         <div className="col-12 d-flex justify-content-between align-items-center mb-2">
                             <h4 className="text-light fw-bold mb-0"><i className="fas fa-search me-2 text-primary"></i>Filtros del Panel</h4>
-                            
+
                             {selectedIds.length > 0 && (
-                                <button 
+                                <button
                                     className="btn btn-danger fw-bold shadow fs-8 px-4"
                                     onClick={handleBulkDelete}
                                     disabled={isDeletingBulk}
@@ -580,7 +616,7 @@ export const AdminDashboard = () => {
                                 </button>
                             )}
                         </div>
-                        
+
                         <div className="col-12 col-md-3">
                             <input type="text" className="form-control fw-bold border-0" placeholder="Buscar por nombre..." onChange={(e) => setFilterName(e.target.value)} />
                         </div>
@@ -610,17 +646,13 @@ export const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* --- ESTILOS CSS REFORZADOS PARA MÁXIMA LEGIBILIDAD --- */}
+                    {/* --- ESTILOS CSS REFORZADOS --- */}
                     <style>
                         {`
                         @media (max-width: 768px) {
-                            .mobile-grid-table thead {
-                                display: none;
-                            }
-                            .mobile-grid-table tbody, 
-                            .mobile-grid-table tr {
-                                display: block;
-                                width: 100%;
+                            .mobile-grid-table thead { display: none; }
+                            .mobile-grid-table tbody, .mobile-grid-table tr {
+                                display: block; width: 100%;
                             }
                             .mobile-grid-table tr {
                                 background-color: #2c2c2c;
@@ -641,56 +673,32 @@ export const AdminDashboard = () => {
                                 width: 100%;
                                 font-size: 1rem;
                             }
-                            /* Etiquetas para identificar los datos en móvil */
                             .mobile-grid-table td::before {
                                 content: attr(data-label);
                                 font-weight: 800;
-                                color: #ff6b6b; /* Rojo vibrante para la etiqueta */
+                                color: #ff6b6b;
                                 min-width: 100px;
                                 text-transform: uppercase;
                                 font-size: 0.75rem;
                                 letter-spacing: 1px;
                             }
-                            
-                            /* Ajustes específicos por orden */
-                            .td-check { 
-                                order: 1; 
-                                border-bottom: 2px solid #444 !important;
-                                padding-bottom: 1rem !important;
-                                margin-bottom: 0.5rem;
-                            }
+                            .td-check { order: 1; border-bottom: 2px solid #444 !important; padding-bottom: 1rem !important; margin-bottom: 0.5rem; }
                             .td-check::before { content: "Seleccionar:"; color: #fff; }
-
                             .td-id { order: 2; }
                             .td-name { order: 3; font-size: 1.2rem !important; }
                             .td-country { order: 4; }
                             .td-city { order: 5; }
                             .td-type { order: 6; }
                             .td-score { order: 7; }
-                            
                             .td-actions { 
-                                order: 8; 
-                                margin-top: 1rem;
-                                padding-top: 1rem !important;
-                                border-top: 2px solid #444 !important;
-                                display: flex;
-                                gap: 0.5rem;
-                                justify-content: space-between !important;
+                                order: 8; margin-top: 1rem; padding-top: 1rem !important;
+                                border-top: 2px solid #444 !important; display: flex;
+                                gap: 0.5rem; justify-content: space-between !important;
                             }
                             .td-actions::before { display: none; }
-                            
-                            .td-actions button {
-                                flex: 1;
-                                padding: 0.75rem !important;
-                                font-size: 0.9rem !important;
-                            }
+                            .td-actions button { flex: 1; padding: 0.75rem !important; font-size: 0.9rem !important; }
                         }
-
-                        /* Forzar blanco en títulos y nombres */
-                        .text-white-force {
-                            color: #ffffff !important;
-                            opacity: 1 !important;
-                        }
+                        .text-white-force { color: #ffffff !important; opacity: 1 !important; }
                         `}
                     </style>
 
@@ -700,9 +708,9 @@ export const AdminDashboard = () => {
                             <thead style={{ backgroundColor: "#2c2c2c" }}>
                                 <tr style={{ color: "#ff6b6b" }}>
                                     <th className="py-3 px-4 text-center" style={{ width: "50px" }}>
-                                        <input 
-                                            type="checkbox" 
-                                            className="form-check-input border-white" 
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input border-white"
                                             style={{ transform: "scale(1.5)", cursor: "pointer" }}
                                             checked={isAllSelected}
                                             onChange={handleSelectAll}
@@ -723,21 +731,18 @@ export const AdminDashboard = () => {
                                 ) : (
                                     filtered.map(r => (
                                         <tr key={r.id} className={selectedIds.includes(r.id) ? "bg-danger bg-opacity-25" : ""}>
-                                            
-                                            {/* 1. Checkbox */}
                                             <td className="td-check px-4 text-center">
-                                             <div className="form-check d-flex justify-content-between gap-4 mb-0">
-                                                    <input 
-                                                        type="checkbox" 
+                                                <div className="form-check d-flex justify-content-between gap-4 mb-0">
+                                                    <input
+                                                        type="checkbox"
                                                         id={`check-${r.id}`}
                                                         className="form-check-input border-white m-0"
                                                         style={{ transform: "scale(1.4)", cursor: "pointer" }}
                                                         checked={selectedIds.includes(r.id)}
                                                         onChange={() => handleSelectOne(r.id)}
                                                     />
-                                                    {/* Esta etiqueta solo se ve en MÓVIL (d-md-none) */}
-                                                    <label 
-                                                        className="form-check-label text-white fw-bold d-md-none mb-0" 
+                                                    <label
+                                                        className="form-check-label text-white fw-bold d-md-none mb-0"
                                                         htmlFor={`check-${r.id}`}
                                                         style={{ cursor: "pointer", fontSize: "0.9rem" }}
                                                     >
@@ -745,46 +750,32 @@ export const AdminDashboard = () => {
                                                     </label>
                                                 </div>
                                             </td>
-
-                                            {/* 2. ID */}
                                             <td className="td-id text-info fw-bold" data-label="ID:">#{r.id}</td>
-
-                                            {/* 3. Nombre */}
                                             <td className="td-name text-white-force fw-bold fs-6" data-label="Nombre:">
                                                 {r.name}
                                             </td>
-
-                                            {/* 4. País */}
                                             <td className="td-country text-white-force fs-6" data-label="País:">
                                                 <i className="fas fa-globe-americas me-2 text-primary"></i>
                                                 {r.country}
                                             </td>
-
-                                            {/* 5. Ciudad */}
                                             <td className="td-city text-white-force fs-6" data-label="Ciudad:">
                                                 {r.city}
                                             </td>
-
-                                            {/* 6. Tipo */}
                                             <td className="td-type" data-label="Tipo:">
                                                 <span className="badge bg-primary px-3 py-2">{r.food_type}</span>
                                             </td>
-
-                                            {/* 7. Score */}
                                             <td className="td-score fw-bold text-warning fs-6" data-label="Score:">
                                                 <i className="fas fa-star me-1"></i>{r.score}
                                             </td>
-
-                                            {/* 8 y 9. Acciones (Editar y Eliminar) */}
                                             <td className="td-actions text-end px-4">
-                                                <button 
-                                                    className="btn btn-light text-dark fw-bold rounded-pill" 
+                                                <button
+                                                    className="btn btn-light text-dark fw-bold rounded-pill"
                                                     onClick={() => handleEditClick(r)}
                                                 >
                                                     <i className="fas fa-edit me-1"></i> Editar
                                                 </button>
-                                                <button 
-                                                    className="btn btn-danger fw-bold rounded-pill" 
+                                                <button
+                                                    className="btn btn-danger fw-bold rounded-pill"
                                                     onClick={() => handleDelete(r.id)}
                                                 >
                                                     <i className="fas fa-trash me-1"></i> Borrar
