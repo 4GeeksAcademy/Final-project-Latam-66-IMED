@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import toast from "react-hot-toast";
 
 export const Single = () => {
-    // 1. Obtenemos el ID de la URL (ej. /restaurant/1 -> id = 1)
-    const { id } = useParams(); 
+    // Obtenemos el ID de la URL (ej. /restaurant/1 -> id = 1)
+    const { id } = useParams();
     const { store } = useGlobalReducer();
-    
-    // 2. Estados locales para manejar la carga y los datos
+
+    // Estados locales para manejar la carga y los datos
     const [restaurant, setRestaurant] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -15,16 +16,16 @@ export const Single = () => {
     const [comments, setComments] = useState([]); // Guarda los comentarios de la BD
     const [newScore, setNewScore] = useState(""); // Guarda el puntaje del input
     const [newText, setNewText] = useState(""); // Guarda el texto del input
-    
+
     const [editingId, setEditingId] = useState(null); // Guarda el ID de la reseña que se está editando
 
-    // 3. Buscamos la info del restaurante al cargar la página
+    // Buscamos la info del restaurante al cargar la página
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // --- 1.Traer el restaurante ---
+                // --- Traer el restaurante ---
                 const resp = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}`);
-                
+
                 if (resp.ok) {
                     const data = await resp.json();
                     setRestaurant(data);
@@ -35,34 +36,38 @@ export const Single = () => {
                     }
                 }
 
-                // --- 2. Traer los comentarios del restaurante ---
+                // --- Traer los comentarios del restaurante ---
                 const respComments = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`);
                 if (respComments.ok) {
                     const commentsData = await respComments.json();
-                    setComments(commentsData); 
+                    setComments(commentsData);
                 }
 
             } catch (error) {
                 console.error("Error cargando datos:", error);
+                // ALERTA SI FALLA LA CONEXIÓN AL ENTRAR AL RESTAURANTE
+                toast.error("Error de conexión al cargar el restaurante 🔌");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchData(); 
+        fetchData();
     }, [id, store.restaurants]);
 
-    // NUEVO: Función para enviar el comentario a la base de datos
     // Función para Crear o Editar el comentario
     const handleSendComment = async () => {
-        if (!newScore || !newText) return alert("Por favor llena el puntaje y el comentario");
+        if (!newScore || !newText) return toast.error("Por favor llena el puntaje y el comentario ✍️");
+
+        // Validamos que el puntaje sea lógico
+        if (newScore < 0 || newScore > 100) return toast.error("El puntaje debe ser entre 0 y 100 🎯");
 
         try {
-            const token = sessionStorage.getItem("token"); 
-            
+            const token = sessionStorage.getItem("token");
+
             // Si hay editingId hacemos PUT, si no hacemos POST
             const method = editingId ? "PUT" : "POST";
-            const url = editingId 
+            const url = editingId
                 ? import.meta.env.VITE_BACKEND_URL + `/api/comments/${editingId}`
                 : import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`;
 
@@ -77,23 +82,28 @@ export const Single = () => {
                 if (editingId) {
                     setComments(comments.map(c => c.id === editingId ? data.comment : c));
                     setEditingId(null);
+                    // ALERTA DE ÉXITO AL EDITAR
+                    toast.success("¡Reseña actualizada con éxito! ✏️");
                 } else {
-                    setComments([...comments, data.comment]); 
+                    setComments([...comments, data.comment]);
+                    // ALERTA DE ÉXITO AL CREAR
+                    toast.success("¡Reseña publicada con éxito! ⭐");
                 }
-                setNewScore(""); setNewText("");  
+                setNewScore(""); setNewText("");
 
                 const respuestaRestaurante = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}`);
-                
+
                 if (respuestaRestaurante.ok) {
                     const datosActualizados = await respuestaRestaurante.json();
                     setRestaurant(datosActualizados);
                 }
 
             } else {
-                alert("Error al enviar el comentario");
+                toast.error("Error al enviar el comentario ❌");
             }
         } catch (error) {
             console.error("Error:", error);
+            toast.error("Error de conexión con el servidor 🔌");
         }
     };
 
@@ -102,6 +112,7 @@ export const Single = () => {
         setEditingId(comment.id);
         setNewScore(comment.score);
         setNewText(comment.text);
+        toast("Modo edición activado", { icon: "📝" });
     };
 
     // Función para eliminar reseña
@@ -116,11 +127,14 @@ export const Single = () => {
 
             if (resp.ok) {
                 setComments(comments.filter(c => c.id !== commentId));
+                // ALERTA DE ÉXITO AL ELIMINAR
+                toast.success("Reseña eliminada correctamente 🗑️");
             } else {
-                alert("Error al intentar eliminar");
+                toast.error("Error al intentar eliminar la reseña ❌");
             }
         } catch (error) {
             console.error("Error:", error);
+            toast.error("Error de conexión con el servidor 🔌");
         }
     };
 
@@ -150,7 +164,7 @@ export const Single = () => {
 
     return (
         <div className="container py-5 mt-4">
-            
+
             {/* --- BOTÓN DE VOLVER --- */}
             <div className="mb-4">
                 <Link to="/" className="text-decoration-none text-secondary">
@@ -160,14 +174,14 @@ export const Single = () => {
 
             {/* --- SECCIÓN SUPERIOR: IMAGEN E INFORMACIÓN --- */}
             <div className="row mb-5 align-items-center">
-                
+
                 {/* Izquierda: Imagen */}
                 <div className="col-12 col-md-6 mb-4 mb-md-0">
-                    <img 
-                        src={restaurant.image_url || "https://placehold.co/800x600?text=Sin+Imagen"} 
-                        alt={restaurant.name} 
-                        className="img-fluid rounded-4 shadow object-fit-cover w-100" 
-                        style={{ height: "400px" }} 
+                    <img
+                        src={restaurant.image_url || "https://placehold.co/800x600?text=Sin+Imagen"}
+                        alt={restaurant.name}
+                        className="img-fluid rounded-4 shadow object-fit-cover w-100"
+                        style={{ height: "400px" }}
                     />
                 </div>
 
@@ -183,12 +197,12 @@ export const Single = () => {
                         </div>
 
                         {/* Diseño Circular del Puntaje */}
-                        <div 
-                            className="rounded-circle d-flex flex-column justify-content-center align-items-center shadow-sm" 
-                            style={{ 
-                                width: "110px", height: "110px", 
-                                backgroundColor: config.color, color: "white", 
-                                border: `5px solid ${config.shadow}` 
+                        <div
+                            className="rounded-circle d-flex flex-column justify-content-center align-items-center shadow-sm"
+                            style={{
+                                width: "110px", height: "110px",
+                                backgroundColor: config.color, color: "white",
+                                border: `5px solid ${config.shadow}`
                             }}
                         >
                             <span className="fw-bold lh-1" style={{ fontSize: "2.5rem" }}>{restaurant.score}</span>
@@ -196,8 +210,8 @@ export const Single = () => {
                         </div>
                     </div>
 
-                    <span 
-                        className="badge rounded-pill mb-4 px-3 py-2 fs-6" 
+                    <span
+                        className="badge rounded-pill mb-4 px-3 py-2 fs-6"
                         style={{ backgroundColor: config.shadow, color: config.color, border: `1px solid ${config.color}` }}
                     >
                         Origen: {restaurant.cuisine_origin}
@@ -215,21 +229,21 @@ export const Single = () => {
             {/* --- SECCIÓN INFERIOR: COMENTARIOS --- */}
             <div className="row">
                 <div className="col-12 col-lg-8 mx-auto">
-                    <h3 className="fw-bold mb-4"><i className="fas fa-comments me-2" style={{color: "#D32F2F"}}></i> Reseñas de la Comunidad</h3>
+                    <h3 className="fw-bold mb-4"><i className="fas fa-comments me-2" style={{ color: "#D32F2F" }}></i> Reseñas de la Comunidad</h3>
 
                     {/* Verificación de Login para poder comentar */}
                     {isUserLoggedIn ? (
                         <div className="card shadow-sm p-4 mb-5 rounded-4 border-0 bg-white" style={{ borderLeft: "5px solid #D32F2F !important" }}>
-                            
+
                             {/* NUEVO: Cambia el título si estamos editando */}
                             <h5 className="fw-bold mb-3">{editingId ? "Editando tu reseña" : "Deja tu puntuación"}</h5>
                             <div className="d-flex flex-column flex-md-row gap-3">
-                                <input 
-                                    type="number" className="form-control" placeholder="Puntaje (0-100)" max="100" min="0" style={{ maxWidth: "150px" }} 
+                                <input
+                                    type="number" className="form-control" placeholder="Puntaje (0-100)" max="100" min="0" style={{ maxWidth: "150px" }}
                                     value={newScore} onChange={(e) => setNewScore(e.target.value)}
                                 />
-                                <input 
-                                    type="text" className="form-control" placeholder="Escribe tu comentario aquí..." 
+                                <input
+                                    type="text" className="form-control" placeholder="Escribe tu comentario aquí..."
                                     value={newText} onChange={(e) => setNewText(e.target.value)}
                                 />
                                 <button onClick={handleSendComment} className="btn btn-primary px-4 fw-bold rounded-3" style={{ backgroundColor: "#D32F2F", border: "none" }}>
@@ -264,13 +278,13 @@ export const Single = () => {
                                 const cConf = getRankingConfig(c.score);
                                 return (
                                     <div key={c.id} className="card border-0 shadow-sm p-3 rounded-4 d-flex flex-row align-items-center gap-4 bg-white transition-hover">
-                                        <div 
-                                            className="rounded-circle d-flex justify-content-center align-items-center fw-bold text-white shadow-sm" 
+                                        <div
+                                            className="rounded-circle d-flex justify-content-center align-items-center fw-bold text-white shadow-sm"
                                             style={{ width: "60px", height: "60px", backgroundColor: cConf.color, fontSize: "1.2rem", flexShrink: 0 }}
                                         >
                                             {c.score}
                                         </div>
-                                        
+
 
                                         {/* NUEVO: Agregamos flex-grow-1 para empujar los botones a la derecha */}
                                         <div className="flex-grow-1">

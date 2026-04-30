@@ -1,22 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export const Login = () => {
-    // 1. Definimos los estados, tal como lo hiciste en el Signup
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
         setLoading(true);
 
         try {
-            // 2. Apuntamos al endpoint de login
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/login", {
                 method: "POST",
                 headers: {
@@ -28,22 +25,23 @@ export const Login = () => {
             const data = await response.json();
 
             if (response.ok) {
-                // 3. ¡Paso crucial! Guardamos el token de autenticación
-                // Asumiendo que tu backend devuelve el token bajo la propiedad 'access_token'
+                // Guardamos el token y el rol en el navegador (sessionStorage)
                 sessionStorage.setItem("token", data.access_token);
-                sessionStorage.setItem("role", data.role); // Guardamos el rol
-                sessionStorage.setItem("user_id", data.user_id);
+                // Si tu backend devuelve un rol (como "admin"), lo guardamos también
+                if (data.role) sessionStorage.setItem("role", data.role);
 
-                if (data.role === "admin") {
-                    navigate("/admin");
-                } else {
-                    navigate("/");
-                }
+                // Disparamos la alerta de éxito
+                toast.success("¡Has iniciado sesión correctamente! 🚀");
+
+                // Redirigimos al Home o al Perfil
+                navigate("/");
             } else {
-                setError(data.msg || "Credenciales inválidas. Inténtalo de nuevo.");
+                //Si la contraseña o el email están mal
+                toast.error(data.msg || "Credenciales incorrectas ❌");
             }
         } catch (err) {
-            setError("Error de conexión con el servidor");
+            // Error si el servidor de Python está apagado
+            toast.error("Error de conexión con el servidor 🔌");
         } finally {
             setLoading(false);
         }
@@ -51,7 +49,6 @@ export const Login = () => {
 
     return (
         <div className="container min-vh-100 d-flex justify-content-center align-items-center py-5">
-            {/* Usamos las mismas clases de tu paleta: bg-fc-dark, text-fc-light, etc. */}
             <div
                 className="card bg-fc-dark text-fc-light w-100 shadow-lg"
                 style={{ maxWidth: "450px", border: "1px solid var(--fc-red)" }}
@@ -61,14 +58,8 @@ export const Login = () => {
                         <h2 className="fw-bold">
                             <span className="text-fc-red">Log</span> In
                         </h2>
-                        <p className="text-secondary small">Bienvenido de nuevo a FlavorCritic</p>
+                        <p className="text-secondary small">Bienvenido de vuelta a FlavorCritic</p>
                     </div>
-
-                    {error && (
-                        <div className="alert alert-danger py-2 px-3 small border-0 text-center" role="alert">
-                            {error}
-                        </div>
-                    )}
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
@@ -110,11 +101,11 @@ export const Login = () => {
                             className="btn btn-fc-red w-100 fw-bold py-2 mb-3"
                             disabled={loading}
                         >
-                            {loading ? "Iniciando sesión..." : "Ingresar"}
+                            {loading ? "Entrando..." : "Iniciar Sesión"}
                         </button>
 
                         <div className="text-center small mt-3">
-                            ¿No tienes cuenta? <Link to="/signup" className="text-fc-red text-decoration-none fw-bold">Regístrate aquí</Link>
+                            ¿No tienes cuenta? <Link to="/signup" className="text-fc-red text-decoration-none fw-bold">Regístrate</Link>
                         </div>
                     </form>
                 </div>

@@ -1,20 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export const Signup = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
         setLoading(true);
-
-        console.log("Datos que React va a enviar:", { email, password });
 
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/signup", {
@@ -29,13 +26,15 @@ export const Signup = () => {
 
             if (response.ok) {
                 // Si el backend devuelve un 201, redirigimos al login
+                toast.success("¡Cuenta creada con éxito! Bienvenid@ a FlavorCritic 🍔");
                 navigate("/login");
             } else {
                 // Mostramos el error devuelto por la API 
-                setError(data.msg || "Error al registrar el usuario");
+                toast.error(data.msg || "Error al registrar el usuario");
             }
         } catch (err) {
-            setError("Error de conexión con el servidor");
+            // Alerta de ERROR de conexión (si el servidor esta apagado)
+            toast.error("Error de conexión con el servidor 🔌");
         } finally {
             setLoading(false);
         }
@@ -54,13 +53,6 @@ export const Signup = () => {
                         </h2>
                         <p className="text-secondary small">Crea tu cuenta en FlavorCritic</p>
                     </div>
-
-                    {/* Alerta de Errores */}
-                    {error && (
-                        <div className="alert alert-danger py-2 px-3 small border-0 text-center" role="alert">
-                            {error}
-                        </div>
-                    )}
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
