@@ -1,59 +1,99 @@
-import React from "react";
+import React, { useState } from "react";
+import toast from "react-hot-toast";
 
 export const Contacto = () => {
-    // Lista de integrantes del equipo
-    const team = [
-        { name: "Edgar Cuenca", role: "Full Stack Developer" },
-        { name: "Diego Luna", role: "Full Stack Developer" },
-        { name: "Ignacio Pinto", role: "Full Stack Developer" },
-        { name: "Miguel Vasquez", role: "Full Stack Developer" }
-    ];
+    // ESTADO PARA EL FORMULARIO
+    const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+
+    // MANEJO DE LOS INPUTS
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // ENVÍO DEL FORMULARIO SIN RECARGAR LA PÁGINA (AJAX)
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        const submitPromise = fetch("https://formspree.io/f/mkoygbay", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json" // Importante para que Formspree no redirija
+            },
+            body: JSON.stringify(formData)
+        });
+
+        toast.promise(submitPromise, {
+            loading: 'Enviando tu mensaje... ⏳',
+            success: '¡Mensaje enviado con éxito! Nos pondremos en contacto. 🚀',
+            error: 'Hubo un error al enviar el mensaje. ❌'
+        }).then((res) => {
+            if (res.ok) {
+                // Limpiamos el formulario si se envio bien
+                setFormData({ name: "", email: "", message: "" });
+            }
+        }).catch((err) => console.error("Error enviando correo:", err));
+    };
 
     return (
-        <div className="container py-5 mt-4" style={{ minHeight: "75vh" }}>
-            <div className="text-center mb-5">
-                <h1 className="fw-bold mb-3" style={{ color: "var(--fc-dark)" }}>
-                    <span className="text-fc-red">Nuestro</span> Equipo
-                </h1>
-                <p className="lead" style={{ color: "var(--fc-dark)" }}>
-                    Conoce a los desarrolladores del equipo <strong>latam-pt-66-IMED</strong> de <strong>4Geeks Academy</strong> detrás de la magia de FlavorCritic.
-                </p>
-            </div>
+        <div className="container-fluid text-light py-5 animate__animated animate__fadeIn" style={{ backgroundColor: "#121212", minHeight: "100vh" }}>
+            <div className="container">
 
-            <div className="row g-4 justify-content-center mt-3">
-                {team.map((member, index) => (
-                    <div key={index} className="col-12 col-sm-6 col-lg-3">
-                        <div
-                            className="card h-100 border-0 shadow-sm rounded-4 text-center p-4 bg-white"
-                            style={{ transition: "transform 0.3s ease, box-shadow 0.3s ease" }}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.transform = "translateY(-8px)";
-                                e.currentTarget.style.boxShadow = "0 10px 20px rgba(129, 0, 0, 0.1)";
-                            }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.transform = "translateY(0)";
-                                e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.05)";
-                            }}
-                        >
-                            {/* Avatar circular con la inicial del nombre */}
-                            <div
-                                className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
-                                style={{ width: "80px", height: "80px", backgroundColor: "var(--fc-dark)", color: "var(--fc-light)" }}
-                            >
-                                <span className="fs-2 fw-bold">{member.name.charAt(0)}</span>
-                            </div>
-
-                            <h5 className="fw-bold mb-1 text-truncate" style={{ color: "var(--fc-dark)" }}>
-                                {member.name}
-                            </h5>
-                            <p className="text-muted small mb-0">
-                                <i className="fas fa-laptop-code me-2" style={{ color: "var(--fc-red)" }}></i>
-                                {member.role}
-                            </p>
-
+                {/* =========================================
+                    FORMULARIO DE CONTACTO
+                ========================================= */}
+                <div className="row justify-content-center mb-4">
+                    <div className="col-md-8 col-lg-6 bg-dark p-5 rounded-4 border border-secondary shadow-lg">
+                        <div className="text-center mb-4">
+                            <i className="fas fa-paper-plane text-danger fs-1 mb-3"></i>
+                            <h2 className="text-light fw-bold">Contáctanos</h2>
+                            <p className="text-white-50">¿Tienes dudas, sugerencias o encontraste un bug? Escríbenos directamente a nuestro correo de administración.</p>
                         </div>
+
+                        <form onSubmit={handleSubmit}>
+                            <div className="mb-3">
+                                <label className="form-label text-white-50 fw-bold">Nombre Completo</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="form-control bg-black text-light border-secondary"
+                                    placeholder="Ej: Juan Pérez"
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label text-white-50 fw-bold">Correo Electrónico</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="form-control bg-black text-light border-secondary"
+                                    placeholder="juan@ejemplo.com"
+                                    required
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="form-label text-white-50 fw-bold">Tu Mensaje</label>
+                                <textarea
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
+                                    className="form-control bg-black text-light border-secondary"
+                                    rows="5"
+                                    placeholder="Cuéntanos en qué podemos ayudarte..."
+                                    required
+                                ></textarea>
+                            </div>
+                            <button type="submit" className="btn btn-danger w-100 py-3 fw-bold rounded-pill shadow">
+                                <i className="fas fa-envelope me-2"></i> Enviar Mensaje
+                            </button>
+                        </form>
                     </div>
-                ))}
+                </div>
+
             </div>
         </div>
     );
