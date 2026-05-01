@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import cloudinary
+import cloudinary.uploader
 
 api = Blueprint('api', __name__)
 
@@ -105,7 +107,7 @@ def create_restaurant():
         name=body.get("name"),
         image_url=body.get("image_url"),
         food_type=body.get("food_type"),
-        score=body.get("score", 0), # Si no viene score, pone 0 por defecto
+        score=body.get("score", 0),  # Si no viene score, pone 0 por defecto
         cuisine_origin=body.get("cuisine_origin"),
         city=body.get("city"),
         country=body.get("country"),
@@ -199,7 +201,6 @@ def get_single_restaurant(restaurant_id):
 
 @api.route('/profile', methods=['GET'])
 @jwt_required()  # Protegemos la ruta: solo entran usuarios con token
-
 def get_user_profile():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
@@ -208,9 +209,10 @@ def get_user_profile():
         return jsonify({"msg": "Usuario no encontrado"}), 404
 
     # 1. Buscamos las reseñas reales (modelo Comment) de este usuario
-    comentarios_del_usuario = Comment.query.filter_by(user_id=current_user_id).all()
+    comentarios_del_usuario = Comment.query.filter_by(
+        user_id=current_user_id).all()
     review_count = len(comentarios_del_usuario)
-    
+
     # 2. Lógica de Negocio: Nivel de Usuario
     level = "Novato"
     if review_count >= 15:
@@ -242,7 +244,6 @@ def get_user_profile():
     }), 200
 
 
-
 # RUTAS PARA EDITAR EL PERFIL
 @api.route('/profile', methods=['PUT'])
 @jwt_required()
@@ -258,26 +259,33 @@ def update_user_profile():
         # Email (Validación normal)
         if "email" in body:
             user.email = body["email"]
-        
+
         # Username (LA SOLUCIÓN AL ERROR 500)
         if "username" in body:
             new_val = body["username"].strip() if body["username"] else ""
-            if new_val == "" or new_val == "@usuario": # Si es el default o vacío
+            if new_val == "" or new_val == "@usuario":  # Si es el default o vacío
                 user.username = None
             else:
                 # Buscamos si ALGUIEN MÁS tiene ese nombre
-                check = User.query.filter(User.username == new_val, User.id != user.id).first()
+                check = User.query.filter(
+                    User.username == new_val, User.id != user.id).first()
                 if check:
                     return jsonify({"msg": "Nombre de usuario ya ocupado"}), 400
                 user.username = new_val
 
         # Otros campos
-        if "full_name" in body: user.full_name = body["full_name"]
-        if "country" in body: user.country = body["country"]
-        if "city" in body: user.city = body["city"]
-        if "age" in body: user.age = body["age"]
-        if "bio" in body: user.bio = body["bio"]
-        if "profile_picture" in body: user.profile_picture = body["profile_picture"]
+        if "full_name" in body:
+            user.full_name = body["full_name"]
+        if "country" in body:
+            user.country = body["country"]
+        if "city" in body:
+            user.city = body["city"]
+        if "age" in body:
+            user.age = body["age"]
+        if "bio" in body:
+            user.bio = body["bio"]
+        if "profile_picture" in body:
+            user.profile_picture = body["profile_picture"]
 
         db.session.commit()
         return jsonify({"msg": "Perfil actualizado", "user_info": user.serialize()}), 200
@@ -286,30 +294,42 @@ def update_user_profile():
         db.session.rollback()
         print(f"--- ERROR CRÍTICO ---: {str(e)}")
         return jsonify({"msg": "Error de duplicado en la base de datos"}), 500
-    
+
 
 # -----------------------------------------------------------
 # 1. CREAR UN COMENTARIO EN UN RESTAURANTE
 # -----------------------------------------------------------
 @api.route('/restaurants/<int:restaurant_id>/comments', methods=['POST'])
-@jwt_required() # Solo usuarios registrados
+@jwt_required()  # Solo usuarios registrados
 def create_comment(restaurant_id):
     current_user_id = get_jwt_identity()
-    body = request.get_json()
+    text = request.form.get('text')
+    score = request.form.get('score')
 
-    # Validamos que vengan los campos obligatorios según tu modelo (text y score)
-    if 'text' not in body or 'score' not in body:
+    # 1. Validamos que vengan los campos obligatorios (sin usar 'body')
+    if not text or not score:
         return jsonify({"msg": "El texto y el score son obligatorios"}), 400
 
     # Verificamos que el restaurante exista
     restaurant = Restaurant.query.get(restaurant_id)
     if not restaurant:
+        # 2. Faltaba el código de estado 404 aquí
         return jsonify({"msg": "Restaurante no encontrado"}), 404
+
+    # 3. Corregido el error de dedo "hoto_url" -> "photo_url"
+    photo_url = None
+    if 'photo' in request.files:
+        file = request.files['photo']
+        if file.filename != '':
+            upload_result = cloudinary.uploader.upload(file)
+            photo_url = upload_result.get('secure_url')
 
     # Creamos el comentario usando los nombres exactos de tus columnas
     new_comment = Comment(
-        text=body['text'],
-        score=body['score'],
+        # 4. Usamos la variable 'text' directamente en lugar de body['text']
+        text=text,
+        score=int(score),  # Aseguramos que sea entero
+        photo_url=photo_url,  # Agregamos la URL de la imagen
         user_id=current_user_id,
         restaurant_id=restaurant_id
     )
@@ -324,6 +344,8 @@ def create_comment(restaurant_id):
 # -----------------------------------------------------------
 # 2. OBTENER COMENTARIOS DE UN RESTAURANTE (Para la vista Single)
 # -----------------------------------------------------------
+
+
 @api.route('/restaurants/<int:restaurant_id>/comments', methods=['GET'])
 def get_restaurant_comments(restaurant_id):
     comments = Comment.query.filter_by(restaurant_id=restaurant_id).all()
@@ -332,6 +354,8 @@ def get_restaurant_comments(restaurant_id):
 # -----------------------------------------------------------
 # 3. OBTENER COMENTARIOS DEL USUARIO (Para la vista Profile)
 # -----------------------------------------------------------
+
+
 @api.route('/users/comments', methods=['GET'])
 @jwt_required()
 def get_user_comments():
@@ -340,26 +364,26 @@ def get_user_comments():
     return jsonify([comment.serialize() for comment in comments]), 200
 
 
-
 def actualizar_promedio_restaurante(id_restaurante):
     restaurante = Restaurant.query.get(id_restaurante)
     if not restaurante:
         return
-    
+
     # Buscar todos los comentarios asociados a este restaurante
     comentarios = Comment.query.filter_by(restaurant_id=id_restaurante).all()
-    
+
     if len(comentarios) > 0:
         # Sumar todas las puntuaciones y dividir entre la cantidad de comentarios
         puntaje_total = sum(comentario.score for comentario in comentarios)
         promedio = puntaje_total / len(comentarios)
-        restaurante.score = round(promedio, 1) # Redondeamos a 1 decimal
+        restaurante.score = round(promedio, 1)  # Redondeamos a 1 decimal
     else:
         restaurante.score = 0
-        
+
     db.session.commit()
 
-# Rutas para ver los comentarios 
+# Rutas para ver los comentarios
+
 
 @api.route('/users', methods=['GET'])
 @jwt_required()
@@ -374,6 +398,8 @@ def get_all_users():
     return jsonify([user.serialize() for user in users]), 200
 
 # Ruta para ver los comentarios de un usuario específico
+
+
 @api.route('/users/<int:user_id>/comments', methods=['GET'])
 @jwt_required()
 def get_specific_user_comments(user_id):
@@ -393,37 +419,63 @@ def get_specific_user_comments(user_id):
 def update_comment(comment_id):
     current_user_id = get_jwt_identity()
     comment = Comment.query.get(comment_id)
-    
+
     if not comment:
         return jsonify({"msg": "Comentario no encontrado"}), 404
-        
-    # Verificamos que quien intenta editar sea el dueño del comentario
+
     if str(comment.user_id) != str(current_user_id):
-        return jsonify({"msg": "No autorizado para editar este comentario"}), 403
+        return jsonify({"msg": "No autorizado"}), 403
+
+    # --- CAMBIO AQUÍ: Aceptar tanto Form como JSON ---
+    # Intentamos obtener de request.form (FormData del frontend)
+    text = request.form.get("text")
+    score = request.form.get("score")
+
+    # Si vienen vacíos, intentamos obtener de JSON (por si acaso)
+    if text is None and score is None:
+        body = request.get_json(silent=True)
+        if body:
+            text = body.get("text")
+            score = body.get("score")
+
+    # Actualizamos si los valores existen
+    if text:
+        comment.text = text
+    if score:
+        comment.score = int(score)
+
+    # 2. LOGICA PARA LA FOTO:
+    # Verificamos si en el FormData viene un archivo llamado 'photo'
+    if 'photo' in request.files:
+        file_to_upload = request.files['photo']
         
-    body = request.get_json()
-    if 'text' in body: comment.text = body['text']
-    if 'score' in body: comment.score = body['score']
-    
+        # Subimos la nueva imagen a Cloudinary
+        upload_result = cloudinary.uploader.upload(file_to_upload)
+        
+        # Actualizamos la URL en la base de datos con la nueva dirección
+        comment.photo_url = upload_result['secure_url']
+
     db.session.commit()
     return jsonify({"msg": "Comentario actualizado", "comment": comment.serialize()}), 200
 
 # -----------------------------------------------------------
 # ELIMINAR UN COMENTARIO (DELETE)
 # -----------------------------------------------------------
+
+
 @api.route('/comments/<int:comment_id>', methods=['DELETE'])
 @jwt_required()
 def delete_comment(comment_id):
     current_user_id = get_jwt_identity()
     comment = Comment.query.get(comment_id)
-    
+
     if not comment:
         return jsonify({"msg": "Comentario no encontrado"}), 404
-        
+
     # Verificamos que quien intenta borrar sea el dueño
     if str(comment.user_id) != str(current_user_id):
         return jsonify({"msg": "No autorizado para eliminar este comentario"}), 403
-        
+
     db.session.delete(comment)
     db.session.commit()
     return jsonify({"msg": "Comentario eliminado exitosamente"}), 200

@@ -29,6 +29,7 @@ export const Login = () => {
                 sessionStorage.setItem("token", data.access_token);
                 // Si tu backend devuelve un rol (como "admin"), lo guardamos también
                 if (data.role) sessionStorage.setItem("role", data.role);
+                sessionStorage.setItem("user_id", data.user_id);
 
                 // Disparamos la alerta de éxito
                 toast.success("¡Has iniciado sesión correctamente! 🚀");

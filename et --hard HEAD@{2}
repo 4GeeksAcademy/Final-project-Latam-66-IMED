@@ -1,0 +1,11 @@
+[33ma20de3c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD@{2}
+[33m5da9b8d[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: reset: moving to origin/main
+[33m05e8f12[m HEAD@{2}: commit: se agrego la logica para que las reseñas se visualicen en la vista del perfil
+[33ma20de3c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{3}: commit: se agrego la funcionalidad de actualzzar el score de un restaurante con la puntuacion de los usuarios
+[33m5cab40d[m HEAD@{4}: commit: se agregaron los botones para que usuarios logueados puedan editar o eliminar sus reseñas
+[33m4ff7f55[m HEAD@{5}: commit: se corrigio la visibilidad del nombre de usuario en las reseñas
+[33m1d97499[m HEAD@{6}: commit: se agrego la logica para que usuarios registrados puedan hacer criticas y dejar puntuacion
+[33m178aa11[m HEAD@{7}: pull: Fast-forward
+[33m5d11ee2[m HEAD@{8}: pull: Fast-forward
+[33m4e08ac6[m HEAD@{9}: pull: Fast-forward
+[33me19dce0[m HEAD@{10}: clone: from https://github.com/4GeeksAcademy/Final-project-Latam-66-IMED

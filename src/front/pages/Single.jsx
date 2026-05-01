@@ -20,6 +20,8 @@ export const Single = () => {
 
     const [editingId, setEditingId] = useState(null); // Guarda el ID de la reseña que se está editando
 
+    const [newPhoto, setNewPhoto] = useState(null);
+
     // Buscamos la info del restaurante al cargar la página
     useEffect(() => {
         const fetchData = async () => {
@@ -72,10 +74,21 @@ export const Single = () => {
                 ? import.meta.env.VITE_BACKEND_URL + `/api/comments/${editingId}`
                 : import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}/comments`;
 
+            // USAMOS FORMDATA EN LUGAR DE JSON
+            const formData = new FormData();
+            formData.append("score", parseInt(newScore));
+            formData.append("text", newText);
+            if (newPhoto) {
+                formData.append("photo", newPhoto);
+            }
+
             const resp = await fetch(url, {
                 method: method,
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({ score: parseInt(newScore), text: newText })
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                    // ELIMINADO EL CONTENT-TYPE PARA QUE EL NAVEGADOR LO DETECTE COMO MULTIPART/FORM-DATA
+                },
+                body: formData
             });
 
             if (resp.ok) {
@@ -90,7 +103,7 @@ export const Single = () => {
                     // ALERTA DE ÉXITO AL CREAR
                     toast.success("¡Reseña publicada con éxito! ⭐");
                 }
-                setNewScore(""); setNewText("");
+                setNewScore(""); setNewText(""); setNewPhoto(null);
 
                 const respuestaRestaurante = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}`);
 
@@ -255,6 +268,15 @@ export const Single = () => {
                                     type="text" className="form-control" placeholder="Escribe tu comentario aquí..."
                                     value={newText} onChange={(e) => setNewText(e.target.value)}
                                 />
+                                {/* INPUT PARA LA FOTO */}
+                                <input
+                                    type="file" className="form-control" accept="image/*"
+                                    onChange={(e) => setNewPhoto(e.target.files[0])}
+                                />
+
+
+
+
                                 <button onClick={handleSendComment} className="btn btn-primary px-4 fw-bold rounded-3" style={{ backgroundColor: "#D32F2F", border: "none" }}>
                                     {editingId ? "Guardar" : "Enviar"}
                                 </button>
@@ -299,10 +321,19 @@ export const Single = () => {
                                         <div className="flex-grow-1">
                                             <h6 className="mb-1 fw-bold text-dark">{c.username || "Usuario"}</h6>
                                             <p className="mb-0 text-secondary">{c.text}</p>
+                                            {/* AQUÍ SE RENDERIZA LA IMAGEN SI EXISTE */}
+                                            {c.photo_url && (
+                                                <img
+                                                    src={c.photo_url}
+                                                    alt="Foto adjunta"
+                                                    className="img-fluid rounded-3 mt-2"
+                                                    style={{ maxHeight: "150px", objectFit: "cover" }}
+                                                />
+                                            )}
                                         </div>
 
                                         {/* NUEVO: Botones de Editar y Eliminar (Solo visibles para el dueño) */}
-                                        {String(c.user_id) === String(currentUserId) && (
+                                        {String(c.user_id) === String(sessionStorage.getItem("user_id")) && (
                                             <div className="d-flex flex-column gap-2 ms-auto">
                                                 <button onClick={() => handleEditClick(c)} className="btn btn-sm btn-outline-primary border-0" title="Editar">
                                                     <i className="fas fa-edit"></i>
