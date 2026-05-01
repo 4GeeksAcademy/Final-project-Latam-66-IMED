@@ -58,6 +58,10 @@ class Restaurant(db.Model):
 
     # Nueva columna para pais
     country = db.Column(db.String(80), nullable=True) # ej: japon, mexico, venezuela
+
+    #Coordenadas
+    latitud = db.Column(db.Float, nullable=True)
+    longitud = db.Column(db.Float, nullable=True)
     
     def serialize(self):
         return {
@@ -69,7 +73,9 @@ class Restaurant(db.Model):
             "cuisine_origin": self.cuisine_origin,
             "description": self.description,
             "city": self.city,
-            "country": self.country
+            "country": self.country,
+            "latitud": self.latitud,
+            "longitud": self.longitud
         }
     
 # ==========================================

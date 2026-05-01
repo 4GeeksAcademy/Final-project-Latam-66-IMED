@@ -169,14 +169,14 @@ export const Navbar = () => {
 									{/* Botón exclusivo para el administrador */}
 									{role === "admin" && (
 										<Link to="/admin" className="btn btn-outline-warning rounded-2 px-4 py-2 fw-medium">
-											Panel Admin
+											Panel Admr.
 										</Link>
 									)}
 									<button
 										onClick={handleLogout}
 										className="btn btn-fc-red rounded-2 px-4 py-2 fw-medium"
 									>
-										Log-Out
+										Cerrar Sesión
 									</button>
 
 									{/* BOTÓN DE USUARIO (Solo visible con sesión iniciada) */}

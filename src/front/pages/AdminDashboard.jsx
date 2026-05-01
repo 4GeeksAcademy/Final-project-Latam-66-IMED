@@ -10,7 +10,7 @@ export const AdminDashboard = () => {
 
     const initialFormState = {
         name: "", image_url: "", score: 0, food_type: "", cuisine_origin: "",
-        country: "", city: "", description: ""
+        country: "", city: "", description: "", latitud: "", longitud: ""
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -205,7 +205,9 @@ export const AdminDashboard = () => {
                 cuisine_origin: cols[5]?.trim() || "",
                 country: cols[6]?.trim() || "",
                 city: cols[7]?.trim() || "",
-                description: cols[8]?.trim() || ""
+                description: cols[8]?.trim() || "",
+                latitud: cols[9]?.trim() ? parseFloat(cols[9].trim()) : null,
+                longitud: cols[10]?.trim() ? parseFloat(cols[10].trim()) : null
             };
         }).filter(r => r.name !== "");
         setBulkPreview(parsedData);
@@ -404,7 +406,8 @@ export const AdminDashboard = () => {
         setFormData({
             name: restaurant.name, image_url: restaurant.image_url || "", score: restaurant.score || 0,
             food_type: restaurant.food_type, cuisine_origin: restaurant.cuisine_origin,
-            country: restaurant.country || "", city: restaurant.city, description: restaurant.description || ""
+            country: restaurant.country || "", city: restaurant.city, description: restaurant.description || "",
+            latitud: restaurant.latitud || "", longitud: restaurant.longitud || ""
         });
         setEditingId(restaurant.id);
         setShowBulk(false);
@@ -532,7 +535,7 @@ export const AdminDashboard = () => {
                             <div className="alert alert-secondary text-dark border-0 mb-4 fw-semibold">
                                 <p className="mb-2"><b>Instrucciones:</b> Copia y pega desde tu Excel con este orden exacto de columnas:</p>
                                 <p className="mb-0 font-monospace text-danger bg-light p-2 rounded">
-                                    ID (Dejar vacío para crear) | Nombre | URL Imagen | Score | Tipo Comida | Origen | País | Ciudad | Descripción
+                                    ID (Dejar vacío para crear) | Nombre | URL Imagen | Score | Tipo Comida | Origen | País | Ciudad | Descripción | Latitud | Longitud
                                 </p>
                             </div>
 
@@ -564,7 +567,7 @@ export const AdminDashboard = () => {
                                         <table className="table table-sm table-dark table-striped">
                                             <thead>
                                                 <tr>
-                                                    <th>Acción</th><th>Nombre</th><th>Score</th><th>Tipo</th><th>País</th><th>Ciudad</th>
+                                                    <th>Acción</th><th>Nombre</th><th>Score</th><th>Tipo</th><th>País</th><th>Ciudad</th><th>Latitud</th><th>Longitud</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -580,6 +583,8 @@ export const AdminDashboard = () => {
                                                         <td>{r.food_type}</td>
                                                         <td>{r.country}</td>
                                                         <td>{r.city}</td>
+                                                        <td>{r.latitud || "-"}</td>
+                                                        <td>{r.longitud || "-"}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -631,6 +636,16 @@ export const AdminDashboard = () => {
                                     <div className="col-md-6">
                                         <label className="form-label text-light fs-8 fw-bold">Ciudad</label>
                                         <input type="text" name="city" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: Caracas" value={formData.city} onChange={handleChange} required />
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <label className="form-label text-light fs-8 fw-bold">Latitud</label>
+                                        <input type="number" step="any" name="latitud" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: 19.4326" value={formData.latitud} onChange={handleChange} />
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <label className="form-label text-light fs-8 fw-bold">Longitud</label>
+                                        <input type="number" step="any" name="longitud" className="form-control bg-secondary text-white fw-bold border-0" placeholder="Ej: -99.1332" value={formData.longitud} onChange={handleChange} />
                                     </div>
 
                                     <div className="col-12">
@@ -773,6 +788,8 @@ export const AdminDashboard = () => {
                                     <th className="fw-bold text-white-force">Ciudad</th>
                                     <th className="fw-bold text-white-force">Tipo</th>
                                     <th className="fw-bold text-white-force">Score</th>
+                                    <th className="fw-bold text-white-force">Latitud</th>
+                                    <th className="fw-bold text-white-force">Longitud</th>
                                     <th className="text-end px-4 fw-bold text-white-force">Acciones</th>
                                 </tr>
                             </thead>
@@ -817,6 +834,12 @@ export const AdminDashboard = () => {
                                             </td>
                                             <td className="td-score fw-bold text-warning fs-6" data-label="Score:">
                                                 <i className="fas fa-star me-1"></i>{r.score}
+                                            </td>
+                                            <td className="text-white-force fs-6" data-label="Latitud:">
+                                                {r.latitud || "N/A"}
+                                            </td>
+                                            <td className="text-white-force fs-6" data-label="Longitud:">
+                                                {r.longitud || "N/A"}
                                             </td>
                                             <td className="td-actions text-end px-4">
                                                 <button

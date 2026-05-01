@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import toast from "react-hot-toast";
+import { RestaurantMap } from "../components/RestaurantMap";
 
 export const Single = () => {
     // Obtenemos el ID de la URL (ej. /restaurant/1 -> id = 1)
@@ -198,7 +199,7 @@ export const Single = () => {
 
                         {/* Diseño Circular del Puntaje */}
                         <div
-                            className="rounded-circle d-flex flex-column justify-content-center align-items-center shadow-sm"
+                            className="rounded-circle d-flex flex-column justify-content-center align-items-center shadow-sm flex-shrink-0"
                             style={{
                                 width: "110px", height: "110px",
                                 backgroundColor: config.color, color: "white",
@@ -221,6 +222,14 @@ export const Single = () => {
                     <p className="lead text-secondary" style={{ lineHeight: "1.8", fontSize: "1.1rem" }}>
                         {restaurant.description || "Un lugar increíble con gran variedad gastronómica. Disfruta de la mejor calidad en cada plato."}
                     </p>
+
+                    <div className="mt-5">
+                        <h5 className="fw-bold mb-3">
+                            <i className="fas fa-map-marked-alt me-2" style={{ color: "#D32F2F" }}></i>
+                            Ubicación
+                        </h5>
+                        <RestaurantMap latitud={restaurant.latitud} longitud={restaurant.longitud} />
+                    </div>
                 </div>
             </div>
 

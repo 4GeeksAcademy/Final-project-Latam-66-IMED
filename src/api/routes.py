@@ -109,7 +109,9 @@ def create_restaurant():
         cuisine_origin=body.get("cuisine_origin"),
         city=body.get("city"),
         country=body.get("country"),
-        description=body.get("description")
+        description=body.get("description"),
+        latitud=body.get("latitud"),
+        longitud=body.get("longitud")
     )
     db.session.add(new_restaurant)
     db.session.commit()
@@ -148,6 +150,10 @@ def update_restaurant(restaurant_id):
         restaurant.country = body["country"]
     if "score" in body:
         restaurant.score = body["score"]
+    if "latitud" in body:
+        restaurant.latitud = body["latitud"]
+    if "longitud" in body:
+        restaurant.longitud = body["longitud"]
 
     db.session.commit()
     return jsonify({"msg": "Restaurante actualizado", "restaurant": restaurant.serialize()}), 200
