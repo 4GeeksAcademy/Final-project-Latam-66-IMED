@@ -169,7 +169,7 @@ export const Navbar = () => {
 									{/* Botón exclusivo para el administrador */}
 									{role === "admin" && (
 										<Link to="/admin" className="btn btn-outline-warning rounded-2 px-4 py-2 fw-medium">
-											Panel Admr.
+											Panel Admin.
 										</Link>
 									)}
 									<button
