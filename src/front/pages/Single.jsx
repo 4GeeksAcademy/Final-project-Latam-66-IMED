@@ -20,7 +20,18 @@ export const Single = () => {
 
     const [editingId, setEditingId] = useState(null); // Guarda el ID de la reseña que se está editando
 
-    const [newPhoto, setNewPhoto] = useState(null);
+    const [newPhotos, setNewPhotos] = useState([]);
+
+    const handleFileChange = (e) => {
+        const files = Array.from(e.target.files); // Convierte la lista de archivos en un arreglo
+        if (files.length > 3) {
+            toast.error("Máximo puedes subir 3 fotos 📸");
+            e.target.value = null; // Limpia el input visualmente
+            setNewPhotos([]);
+        } else {
+            setNewPhotos(files);
+        }
+    };
 
     // Buscamos la info del restaurante al cargar la página
     useEffect(() => {
@@ -78,9 +89,9 @@ export const Single = () => {
             const formData = new FormData();
             formData.append("score", parseInt(newScore));
             formData.append("text", newText);
-            if (newPhoto) {
-                formData.append("photo", newPhoto);
-            }
+            newPhotos.forEach((photo) => {
+                formData.append("photo", photo);
+            });
 
             const resp = await fetch(url, {
                 method: method,
@@ -103,7 +114,7 @@ export const Single = () => {
                     // ALERTA DE ÉXITO AL CREAR
                     toast.success("¡Reseña publicada con éxito! ⭐");
                 }
-                setNewScore(""); setNewText(""); setNewPhoto(null);
+                setNewScore(""); setNewText(""); setNewPhotos(null);
 
                 const respuestaRestaurante = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/restaurants/${id}`);
 
@@ -170,7 +181,6 @@ export const Single = () => {
     };
     const config = getRankingConfig(restaurant.score);
 
-    // MODIFICADO: Eliminamos la constante mockComments porque ya usaremos la variable de estado 'comments' real
 
     // MODIFICADO: Añadido sessionStorage.getItem por si el token no se carga a tiempo en el store global
     const isUserLoggedIn = store.token || store.user || sessionStorage.getItem("token");
@@ -270,8 +280,11 @@ export const Single = () => {
                                 />
                                 {/* INPUT PARA LA FOTO */}
                                 <input
-                                    type="file" className="form-control" accept="image/*"
-                                    onChange={(e) => setNewPhoto(e.target.files[0])}
+                                    type="file"
+                                    className="form-control"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleFileChange}
                                 />
 
 
@@ -321,14 +334,20 @@ export const Single = () => {
                                         <div className="flex-grow-1">
                                             <h6 className="mb-1 fw-bold text-dark">{c.username || "Usuario"}</h6>
                                             <p className="mb-0 text-secondary">{c.text}</p>
-                                            {/* AQUÍ SE RENDERIZA LA IMAGEN SI EXISTE */}
-                                            {c.photo_url && (
-                                                <img
-                                                    src={c.photo_url}
-                                                    alt="Foto adjunta"
-                                                    className="img-fluid rounded-3 mt-2"
-                                                    style={{ maxHeight: "150px", objectFit: "cover" }}
-                                                />
+
+                                            {/* AQUÍ SE RENDERIZAN LAS IMÁGENES SI EXISTEN (AHORA SOPORTA VARIAS) */}
+                                            {c.photo_urls && c.photo_urls.length > 0 && (
+                                                <div className="d-flex gap-2 flex-wrap mt-2">
+                                                    {c.photo_urls.map((url, index) => (
+                                                        <img
+                                                            key={index}
+                                                            src={url}
+                                                            alt={`Foto adjunta ${index + 1}`}
+                                                            className="img-fluid rounded-3 shadow-sm"
+                                                            style={{ maxHeight: "150px", objectFit: "cover" }}
+                                                        />
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
 

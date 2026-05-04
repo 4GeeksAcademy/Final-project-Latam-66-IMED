@@ -6,6 +6,7 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import cloudinary
 import cloudinary.uploader
+from sqlalchemy.orm.attributes import flag_modified
 
 api = Blueprint('api', __name__)
 
@@ -306,30 +307,32 @@ def create_comment(restaurant_id):
     text = request.form.get('text')
     score = request.form.get('score')
 
-    # 1. Validamos que vengan los campos obligatorios (sin usar 'body')
+    # 1. Validamos que vengan los campos obligatorios
     if not text or not score:
         return jsonify({"msg": "El texto y el score son obligatorios"}), 400
 
     # Verificamos que el restaurante exista
     restaurant = Restaurant.query.get(restaurant_id)
     if not restaurant:
-        # 2. Faltaba el código de estado 404 aquí
         return jsonify({"msg": "Restaurante no encontrado"}), 404
 
-    # 3. Corregido el error de dedo "hoto_url" -> "photo_url"
-    photo_url = None
+    # --- NUEVA LÓGICA PARA SUBIR HASTA 3 FOTOS ---
+    uploaded_urls = []
     if 'photo' in request.files:
-        file = request.files['photo']
-        if file.filename != '':
-            upload_result = cloudinary.uploader.upload(file)
-            photo_url = upload_result.get('secure_url')
+        # getlist atrapa todas las fotos que envió el frontend
+        files = request.files.getlist('photo')
+        # file[:3] asegura que máximo procese 3 archivos
+        for file in files[:3]:
+            if file.filename != '':
+                upload_result = cloudinary.uploader.upload(file)
+                uploaded_urls.append(upload_result.get('secure_url'))
 
-    # Creamos el comentario usando los nombres exactos de tus columnas
+    # Creamos el comentario
     new_comment = Comment(
-        # 4. Usamos la variable 'text' directamente en lugar de body['text']
         text=text,
-        score=int(score),  # Aseguramos que sea entero
-        photo_url=photo_url,  # Agregamos la URL de la imagen
+        score=int(score),
+        # <-- Usamos photo_urls (en plural y le pasamos la lista)
+        photo_urls=uploaded_urls,
         user_id=current_user_id,
         restaurant_id=restaurant_id
     )
@@ -337,6 +340,7 @@ def create_comment(restaurant_id):
     db.session.add(new_comment)
     db.session.commit()
 
+    # Mantenemos intacta tu función para actualizar el promedio
     actualizar_promedio_restaurante(restaurant_id)
 
     return jsonify({"msg": "Comentario creado exitosamente", "comment": new_comment.serialize()}), 201
@@ -426,7 +430,6 @@ def update_comment(comment_id):
     if str(comment.user_id) != str(current_user_id):
         return jsonify({"msg": "No autorizado"}), 403
 
-    # --- CAMBIO AQUÍ: Aceptar tanto Form como JSON ---
     # Intentamos obtener de request.form (FormData del frontend)
     text = request.form.get("text")
     score = request.form.get("score")
@@ -444,16 +447,20 @@ def update_comment(comment_id):
     if score:
         comment.score = int(score)
 
-    # 2. LOGICA PARA LA FOTO:
-    # Verificamos si en el FormData viene un archivo llamado 'photo'
+    # se modifico esta parte para por subir fotos cuando editamos un comentario
     if 'photo' in request.files:
-        file_to_upload = request.files['photo']
-        
-        # Subimos la nueva imagen a Cloudinary
-        upload_result = cloudinary.uploader.upload(file_to_upload)
-        
-        # Actualizamos la URL en la base de datos con la nueva dirección
-        comment.photo_url = upload_result['secure_url']
+        files = request.files.getlist('photo')
+        uploaded_urls = []
+        for file in files[:3]:
+            if file.filename != '':
+                upload_result = cloudinary.uploader.upload(file)
+                uploaded_urls.append(upload_result['secure_url'])
+
+        # Guardamos la lista en la DB
+        if uploaded_urls:
+            comment.photo_urls = uploaded_urls
+            # Fuerza a la DB a guardar el JSON modificado
+            flag_modified(comment, "photo_urls")
 
     db.session.commit()
     return jsonify({"msg": "Comentario actualizado", "comment": comment.serialize()}), 200

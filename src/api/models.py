@@ -150,7 +150,7 @@ class Comment(db.Model):
     score = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))
-    photo_url = db.Column(db.String(500), nullable=True)
+    photo_urls = db.Column(db.JSON, nullable=True, default=[])
 
     # Relaciones
     user = db.relationship('User', backref='comments')
@@ -178,5 +178,5 @@ class Comment(db.Model):
             "username": display_name,
             "restaurant_id": self.restaurant_id,
             "restaurant_name": self.restaurant.name if self.restaurant else "Restaurante",
-            "photo_url": self.photo_url
+            "photo_urls": self.photo_urls
         }
