@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-// 1. IMPORTAMOS TOAST
 import toast from "react-hot-toast";
 
 export const AdminDashboard = () => {
@@ -16,6 +15,9 @@ export const AdminDashboard = () => {
     const [formData, setFormData] = useState(initialFormState);
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
+
+    // ESTADO PARA CLOUDINARY
+    const [isUploading, setIsUploading] = useState(false);
 
     // Estados para Filtros del Dashboard
     const [filterName, setFilterName] = useState("");
@@ -34,10 +36,8 @@ export const AdminDashboard = () => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
-    // ====================================================================
-    // 🌟 NUEVOS ESTADOS PARA USUARIOS Y PESTAÑAS
-    // ====================================================================
-    const [activeTab, setActiveTab] = useState("restaurants"); // "restaurants" o "users"
+    // Estados para Usuarios y Pestañas
+    const [activeTab, setActiveTab] = useState("restaurants");
     const [usersList, setUsersList] = useState([]);
     const [selectedUserComments, setSelectedUserComments] = useState(null);
 
@@ -54,7 +54,6 @@ export const AdminDashboard = () => {
         if (!store.restaurants || store.restaurants.length === 0) {
             fetchAdminRestaurants();
         }
-        // Llamamos también a los usuarios
         fetchAdminUsers();
     }, []);
 
@@ -71,7 +70,6 @@ export const AdminDashboard = () => {
         }
     };
 
-    // --- NUEVAS FUNCIONES PARA USUARIOS ---
     const fetchAdminUsers = async () => {
         try {
             const token = sessionStorage.getItem("token");
@@ -113,9 +111,35 @@ export const AdminDashboard = () => {
         (r.country || "").toLowerCase().includes(filterCountry.toLowerCase())
     );
 
-    // ====================================================================
-    // 🌟 CONTROLADORES DE LOS BOTONES SUPERIORES
-    // ====================================================================
+    // FUNCIÓN PARA SUBIR IMAGEN A CLOUDINARY
+    const uploadImageToCloudinary = async (file) => {
+        setIsUploading(true);
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "restaurantes_preset");
+        data.append("cloud_name", "de1dgfuk3");
+
+        try {
+            const response = await fetch("https://api.cloudinary.com/v1_1/de1dgfuk3/image/upload", {
+                method: "POST",
+                body: data,
+            });
+            
+            if (!response.ok) {
+                throw new Error("Error en la respuesta de Cloudinary");
+            }
+
+            const result = await response.json();
+            setIsUploading(false);
+            return result.secure_url; 
+        } catch (error) {
+            console.error("Error al subir la imagen:", error);
+            toast.error("Fallo al subir imagen a la nube ☁️❌");
+            setIsUploading(false);
+            return null;
+        }
+    };
+
     const handleCreateClick = () => {
         if (showForm && !editingId) {
             setShowForm(false);
@@ -136,13 +160,18 @@ export const AdminDashboard = () => {
         }
     };
 
-    // MANEJO DE FORMULARIO INDIVIDUAL CON TOAST PROMISE
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (isUploading) {
+            toast.error("Espera a que la imagen termine de subir ⏳");
+            return;
+        }
+
         const token = sessionStorage.getItem("token");
         const url = editingId
             ? `${import.meta.env.VITE_BACKEND_URL}/api/restaurants/${editingId}`
@@ -185,7 +214,7 @@ export const AdminDashboard = () => {
         }).catch(err => console.error(err));
     };
 
-    // LÓGICA DE CARGA MASIVA (Excel) CON TOAST PROMISE
+    // LÓGICA DE CARGA MASIVA (Excel)
     useEffect(() => {
         if (!bulkText.trim()) {
             setBulkPreview([]);
@@ -263,7 +292,6 @@ export const AdminDashboard = () => {
         });
     };
 
-    // LÓGICA DE LOS CHECKBOXES Y ELIMINACIÓN MASIVA CON TOAST PROMISE
     const handleSelectOne = (id) => {
         if (selectedIds.includes(id)) {
             setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
@@ -281,7 +309,6 @@ export const AdminDashboard = () => {
         }
     };
 
-    // LÓGICA DE LA ELIMINACIÓN MASIVA CON TOAST DE CONFIRMACIÓN
     const handleBulkDelete = () => {
         if (selectedIds.length === 0) return;
 
@@ -294,7 +321,7 @@ export const AdminDashboard = () => {
                     <button
                         className="btn btn-danger fw-bold rounded-pill px-4"
                         onClick={async () => {
-                            toast.dismiss(t.id); // Cerramos el toast de confirmación
+                            toast.dismiss(t.id);
                             setIsDeletingBulk(true);
                             const token = sessionStorage.getItem("token");
 
@@ -343,11 +370,10 @@ export const AdminDashboard = () => {
                 </div>
             </div>
         ), {
-            duration: Infinity, // Hace que el toast no se cierre solo hasta que el usuario elija
-            style: { background: "transparent", boxShadow: "none", padding: 0 } // Oculta el fondo por defecto del toast
+            duration: Infinity,
+            style: { background: "transparent", boxShadow: "none", padding: 0 }
         });
     };
-
 
     const handleDelete = (id) => {
         toast((t) => (
@@ -359,7 +385,7 @@ export const AdminDashboard = () => {
                     <button
                         className="btn btn-danger fw-bold rounded-pill px-4"
                         onClick={() => {
-                            toast.dismiss(t.id); // Cerramos el toast de confirmación
+                            toast.dismiss(t.id);
                             const token = sessionStorage.getItem("token");
 
                             const deleteSinglePromise = new Promise(async (resolve, reject) => {
@@ -397,7 +423,7 @@ export const AdminDashboard = () => {
                 </div>
             </div>
         ), {
-            duration: Infinity, // Lo mismo, no se cierra hasta hacer click
+            duration: Infinity,
             style: { background: "transparent", boxShadow: "none", padding: 0 }
         });
     };
@@ -493,7 +519,6 @@ export const AdminDashboard = () => {
                                     <tr key={u.id}>
                                         <td className="px-4 text-info fw-bold">#{u.id}</td>
                                         <td className="fw-bold text-white">
-                                            {/* ENLACE PARA ABRIR MODAL DE COMENTARIOS */}
                                             <span
                                                 className="text-primary"
                                                 style={{ cursor: "pointer", textDecoration: "underline" }}
@@ -559,7 +584,6 @@ export const AdminDashboard = () => {
                                 onChange={(e) => setBulkText(e.target.value)}
                             ></textarea>
 
-                            {/* Tabla de Previsualización */}
                             {bulkPreview.length > 0 && (
                                 <div className="mb-3">
                                     <h5 className="text-success fw-bold mb-2">Previsualización ({bulkPreview.length} filas listas para procesar)</h5>
@@ -612,10 +636,44 @@ export const AdminDashboard = () => {
                                         <label className="form-label text-light fs-8 fw-bold">Nombre</label>
                                         <input type="text" name="name" className="form-control bg-secondary text-white fw-bold border-0" value={formData.name} onChange={handleChange} required />
                                     </div>
+                                    
+                                    {/* INPUT DE CLOUDINARY */}
                                     <div className="col-md-6">
-                                        <label className="form-label text-light fs-8 fw-bold">URL de la Imagen</label>
-                                        <input type="text" name="image_url" className="form-control bg-secondary text-white fw-bold border-0" value={formData.image_url} onChange={handleChange} />
+                                        <label className="form-label text-light fs-8 fw-bold">Foto del Restaurante</label>
+                                        <input 
+                                            type="file" 
+                                            className="form-control bg-secondary text-white fw-bold border-0" 
+                                            accept="image/*" 
+                                            disabled={isUploading} 
+                                            onChange={async (e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    const url = await uploadImageToCloudinary(file);
+                                                    if (url) {
+                                                        setFormData({ ...formData, image_url: url });
+                                                        toast.success("Imagen subida y lista para guardar 📸");
+                                                    }
+                                                }
+                                            }} 
+                                        />
+                                        {isUploading && (
+                                            <div className="text-info mt-2 small fw-bold">
+                                                <i className="fas fa-spinner fa-spin me-2"></i> Subiendo a la nube...
+                                            </div>
+                                        )}
+                                        {formData.image_url && !isUploading && (
+                                            <div className="mt-2 d-flex align-items-center gap-2">
+                                                <img 
+                                                    src={formData.image_url} 
+                                                    alt="Vista previa" 
+                                                    className="img-thumbnail bg-dark border-secondary" 
+                                                    style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "8px" }} 
+                                                />
+                                                <span className="text-success small fw-bold"><i className="fas fa-check-circle me-1"></i>Imagen cargada</span>
+                                            </div>
+                                        )}
                                     </div>
+
                                     <div className="col-md-4">
                                         <label className="form-label text-light fs-8 fw-bold">Score (Rating 0-100)</label>
                                         <input type="number" name="score" className="form-control bg-secondary text-white fw-bold border-0" value={formData.score} onChange={handleChange} required />
@@ -654,7 +712,12 @@ export const AdminDashboard = () => {
                                     </div>
                                 </div>
                                 <div className="mt-4">
-                                    <button type="submit" className="btn text-white me-3 px-4 py-2 fw-bold fs-8" style={{ backgroundColor: "#D32F2F" }}>
+                                    <button 
+                                        type="submit" 
+                                        className="btn text-white me-3 px-4 py-2 fw-bold fs-8" 
+                                        style={{ backgroundColor: "#D32F2F" }}
+                                        disabled={isUploading} 
+                                    >
                                         {editingId ? "Guardar Cambios" : "Crear Restaurante"}
                                     </button>
                                     <button type="button" className="btn btn-outline-light px-4 py-2 fw-bold fs-8" onClick={() => setShowForm(false)}>
@@ -669,18 +732,6 @@ export const AdminDashboard = () => {
                     <div className="row g-3 mb-4 bg-dark p-4 rounded-4 shadow-sm">
                         <div className="col-12 d-flex justify-content-between align-items-center mb-2">
                             <h4 className="text-light fw-bold mb-0"><i className="fas fa-search me-2 text-primary"></i>Filtros del Panel</h4>
-
-                            {selectedIds.length > 0 && (
-                                <button
-                                    className="btn btn-danger fw-bold shadow fs-8 px-4"
-                                    onClick={handleBulkDelete}
-                                    disabled={isDeletingBulk}
-                                >
-                                    {isDeletingBulk ? "Eliminando..." : (
-                                        <><i className="fas fa-trash-alt me-2"></i>Eliminar Seleccionados ({selectedIds.length})</>
-                                    )}
-                                </button>
-                            )}
                         </div>
 
                         <div className="col-12 col-md-3">
@@ -712,161 +763,116 @@ export const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* --- ESTILOS CSS REFORZADOS --- */}
-                    <style>
-                        {`
-                        @media (max-width: 768px) {
-                            .mobile-grid-table thead { display: none; }
-                            .mobile-grid-table tbody, .mobile-grid-table tr {
-                                display: block; width: 100%;
-                            }
-                            .mobile-grid-table tr {
-                                background-color: #2c2c2c;
-                                border: 2px solid #444;
-                                border-radius: 1.25rem;
-                                margin-bottom: 1.5rem;
-                                padding: 1.25rem;
-                                display: flex;
-                                flex-direction: column;
-                                gap: 0.75rem;
-                            }
-                            .mobile-grid-table td {
-                                display: flex;
-                                justify-content: flex-start;
-                                align-items: center;
-                                border: none !important;
-                                padding: 0 !important;
-                                width: 100%;
-                                font-size: 1rem;
-                            }
-                            .mobile-grid-table td::before {
-                                content: attr(data-label);
-                                font-weight: 800;
-                                color: #ff6b6b;
-                                min-width: 100px;
-                                text-transform: uppercase;
-                                font-size: 0.75rem;
-                                letter-spacing: 1px;
-                            }
-                            .td-check { order: 1; border-bottom: 2px solid #444 !important; padding-bottom: 1rem !important; margin-bottom: 0.5rem; }
-                            .td-check::before { content: "Seleccionar:"; color: #fff; }
-                            .td-id { order: 2; }
-                            .td-name { order: 3; font-size: 1.2rem !important; }
-                            .td-country { order: 4; }
-                            .td-city { order: 5; }
-                            .td-type { order: 6; }
-                            .td-score { order: 7; }
-                            .td-actions { 
-                                order: 8; margin-top: 1rem; padding-top: 1rem !important;
-                                border-top: 2px solid #444 !important; display: flex;
-                                gap: 0.5rem; justify-content: space-between !important;
-                            }
-                            .td-actions::before { display: none; }
-                            .td-actions button { flex: 1; padding: 0.75rem !important; font-size: 0.9rem !important; }
-                        }
-                        .text-white-force { color: #ffffff !important; opacity: 1 !important; }
-                        `}
-                    </style>
+                    {/* =========================================================
+                        GRILLA DE MICRO-CARDS (COMPACTA) + SELECCIÓN MASIVA
+                    ========================================================= */}
+                    
+                    {/* BARRA DE SELECCION MASIVA */}
+                    <div className="d-flex justify-content-between align-items-center bg-secondary p-3 rounded-4 mb-3 shadow-sm">
+                        <div className="form-check text-light mb-0 d-flex align-items-center">
+                            <input
+                                type="checkbox"
+                                className="form-check-input mt-0 me-2 border-white"
+                                id="selectAllCards"
+                                checked={isAllSelected}
+                                onChange={handleSelectAll}
+                                style={{ transform: "scale(1.3)", cursor: "pointer" }}
+                            />
+                            <label className="form-check-label fw-bold" htmlFor="selectAllCards" style={{ cursor: "pointer", fontSize: "0.95rem" }}>
+                                Seleccionar Todos ({filtered.length})
+                            </label>
+                        </div>
+                        
+                        {/* Botón Flotante de Eliminar Masivo */}
+                        {selectedIds.length > 0 && (
+                            <button
+                                className="btn btn-danger btn-sm fw-bold shadow-sm px-3 rounded-pill animate__animated animate__pulse"
+                                onClick={handleBulkDelete}
+                                disabled={isDeletingBulk}
+                            >
+                                {isDeletingBulk ? "Borrando..." : (
+                                    <><i className="fas fa-trash-alt me-1"></i> Borrar {selectedIds.length}</>
+                                )}
+                            </button>
+                        )}
+                    </div>
 
-                    {/* TABLA DE GESTIÓN RESTAURANTES */}
-                    <div className="table-responsive card bg-dark border-0 rounded-4 shadow overflow-hidden">
-                        <table className="table table-dark table-hover align-middle mb-0 mobile-grid-table">
-                            <thead style={{ backgroundColor: "#2c2c2c" }}>
-                                <tr style={{ color: "#ff6b6b" }}>
-                                    <th className="py-3 px-4 text-center" style={{ width: "50px" }}>
-                                        <input
-                                            type="checkbox"
-                                            className="form-check-input border-white"
-                                            style={{ transform: "scale(1.5)", cursor: "pointer" }}
-                                            checked={isAllSelected}
-                                            onChange={handleSelectAll}
-                                        />
-                                    </th>
-                                    <th className="fw-bold text-white-force">ID</th>
-                                    <th className="fw-bold text-white-force">Nombre</th>
-                                    <th className="fw-bold text-white-force">País</th>
-                                    <th className="fw-bold text-white-force">Ciudad</th>
-                                    <th className="fw-bold text-white-force">Tipo</th>
-                                    <th className="fw-bold text-white-force">Score</th>
-                                    <th className="fw-bold text-white-force">Latitud</th>
-                                    <th className="fw-bold text-white-force">Longitud</th>
-                                    <th className="text-end px-4 fw-bold text-white-force">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.length === 0 ? (
-                                    <tr><td colSpan="8" className="text-center py-5 text-white fw-bold">No hay resultados disponibles.</td></tr>
-                                ) : (
-                                    filtered.map(r => (
-                                        <tr key={r.id} className={selectedIds.includes(r.id) ? "bg-danger bg-opacity-25" : ""}>
-                                            <td className="td-check px-4 text-center">
-                                                <div className="form-check d-flex justify-content-between gap-4 mb-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        id={`check-${r.id}`}
-                                                        className="form-check-input border-white m-0"
-                                                        style={{ transform: "scale(1.4)", cursor: "pointer" }}
-                                                        checked={selectedIds.includes(r.id)}
-                                                        onChange={() => handleSelectOne(r.id)}
-                                                    />
-                                                    <label
-                                                        className="form-check-label text-white fw-bold d-md-none mb-0"
-                                                        htmlFor={`check-${r.id}`}
-                                                        style={{ cursor: "pointer", fontSize: "0.9rem" }}
-                                                    >
-                                                        Seleccionar
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td className="td-id text-info fw-bold" data-label="ID:">#{r.id}</td>
-                                            <td className="td-name text-white-force fw-bold fs-6" data-label="Nombre:">
-                                                {r.name}
-                                            </td>
-                                            <td className="td-country text-white-force fs-6" data-label="País:">
-                                                <i className="fas fa-globe-americas me-2 text-primary"></i>
-                                                {r.country}
-                                            </td>
-                                            <td className="td-city text-white-force fs-6" data-label="Ciudad:">
-                                                {r.city}
-                                            </td>
-                                            <td className="td-type" data-label="Tipo:">
-                                                <span className="badge bg-primary px-3 py-2">{r.food_type}</span>
-                                            </td>
-                                            <td className="td-score fw-bold text-warning fs-6" data-label="Score:">
-                                                <i className="fas fa-star me-1"></i>{r.score}
-                                            </td>
-                                            <td className="text-white-force fs-6" data-label="Latitud:">
-                                                {r.latitud || "N/A"}
-                                            </td>
-                                            <td className="text-white-force fs-6" data-label="Longitud:">
-                                                {r.longitud || "N/A"}
-                                            </td>
-                                            <td className="td-actions text-end px-4">
+                    {filtered.length === 0 ? (
+                        <div className="text-center py-5 text-white fw-bold">No hay resultados disponibles.</div>
+                    ) : (
+                        // GRILLA ULTRA COMPACTA (Hasta 5 por fila en PC grandes)
+                        <div className="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
+                            {filtered.map(r => (
+                                <div key={r.id} className="col">
+                                    <div className={`card h-100 bg-dark text-white border-secondary shadow-sm rounded-3 ${selectedIds.includes(r.id) ? "border-danger bg-danger bg-opacity-10" : ""}`} style={{ fontSize: "0.85rem" }}>
+                                        
+                                        {/* HEADER: Miniatura y Checkbox */}
+                                        <div className="position-relative">
+                                            <div className="position-absolute top-0 start-0 p-2 z-1">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`check-${r.id}`}
+                                                    className="form-check-input bg-dark border-white"
+                                                    style={{ transform: "scale(1.2)", cursor: "pointer" }}
+                                                    checked={selectedIds.includes(r.id)}
+                                                    onChange={() => handleSelectOne(r.id)}
+                                                />
+                                            </div>
+                                            <div className="position-absolute top-0 end-0 p-1 z-1">
+                                                <span className="badge bg-dark border border-secondary text-info opacity-75" style={{fontSize: "0.65rem"}}>#{r.id}</span>
+                                            </div>
+                                            <img 
+                                                src={r.image_url || "https://via.placeholder.com/400x200?text=Sin+Imagen"} 
+                                                className="card-img-top rounded-top-3" 
+                                                alt={r.name} 
+                                                // Imagen más compacta
+                                                style={{ height: "120px", objectFit: "cover" }} 
+                                            />
+                                        </div>
+
+                                        {/* BODY: Textos reducidos */}
+                                        <div className="card-body p-2 d-flex flex-column">
+                                            <h6 className="card-title fw-bold mb-1 text-truncate" title={r.name}>{r.name}</h6>
+                                            
+                                            <div className="mb-2 text-truncate" style={{fontSize: "0.75rem"}}>
+                                                <i className="fas fa-globe-americas text-primary me-1"></i>
+                                                <span className="text-white-50">{r.city}, {r.country}</span>
+                                            </div>
+                                            
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <span className="badge bg-primary text-truncate" style={{fontSize: "0.7rem", maxWidth: "65%"}} title={r.food_type}>{r.food_type}</span>
+                                                <span className="text-warning fw-bold" style={{fontSize: "0.8rem"}}>
+                                                    <i className="fas fa-star me-1"></i>{r.score}
+                                                </span>
+                                            </div>
+
+                                            {/* BOTONES COMPACTOS */}
+                                            <div className="mt-auto d-flex gap-1">
                                                 <button
-                                                    className="btn btn-light text-dark fw-bold rounded-pill"
+                                                    className="btn btn-light btn-sm text-dark fw-bold rounded-pill flex-grow-1"
+                                                    style={{fontSize: "0.7rem", padding: "0.2rem"}}
                                                     onClick={() => handleEditClick(r)}
                                                 >
-                                                    <i className="fas fa-edit me-1"></i> Editar
+                                                    <i className="fas fa-edit"></i>
                                                 </button>
                                                 <button
-                                                    className="btn btn-danger fw-bold rounded-pill"
+                                                    className="btn btn-outline-danger btn-sm fw-bold rounded-pill flex-grow-1"
+                                                    style={{fontSize: "0.7rem", padding: "0.2rem"}}
                                                     onClick={() => handleDelete(r.id)}
                                                 >
-                                                    <i className="fas fa-trash me-1"></i> Borrar
+                                                    <i className="fas fa-trash"></i>
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* =========================================================
-                MODAL DE RESEÑAS DE USUARIO
-            ========================================================= */}
+            {/* MODAL DE RESEÑAS DE USUARIO SE MANTIENE IGUAL... */}
             {selectedUserComments && (
                 <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.8)", zIndex: 1050 }}>
                     <div className="modal-dialog modal-lg modal-dialog-centered">

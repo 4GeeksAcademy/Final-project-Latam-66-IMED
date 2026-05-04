@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify, Blueprint
+from flask import Flask, request, jsonify, Blueprint, url_for
 from api.models import db, User, Restaurant, Review, Favorite, PlaceToVisit, Comment
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import os
 import cloudinary
 import cloudinary.uploader
 from sqlalchemy.orm.attributes import flag_modified
@@ -11,6 +12,16 @@ from sqlalchemy.orm.attributes import flag_modified
 api = Blueprint('api', __name__)
 
 CORS(api)
+
+# ====================================================================
+# ☁️ CONFIGURACIÓN DE CLOUDINARY
+# ====================================================================
+cloudinary.config(
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key = os.getenv('CLOUDINARY_API_KEY'),
+    api_secret = os.getenv('CLOUDINARY_API_SECRET'),
+    secure = True
+)
 
 
 @api.route('/signup', methods=['POST'])
@@ -87,8 +98,9 @@ def get_restaurants():
     # 3. Los envía al frontend
     return jsonify(result), 200
 
-
-# CREAR restaurante (POST)
+# ====================================================================
+# 📝 CREAR RESTAURANTE (POST) - Soporta Carga Masiva con Pexels
+# ====================================================================
 @api.route('/restaurants', methods=['POST'])
 @jwt_required()  # <--- 1. Exige que el usuario envíe un token válido
 def create_restaurant():
@@ -104,25 +116,51 @@ def create_restaurant():
     if not body:
         return jsonify({"msg": "El cuerpo de la petición está vacío"}), 400
 
-    new_restaurant = Restaurant(
-        name=body.get("name"),
-        image_url=body.get("image_url"),
-        food_type=body.get("food_type"),
-        score=body.get("score", 0),  # Si no viene score, pone 0 por defecto
-        cuisine_origin=body.get("cuisine_origin"),
-        city=body.get("city"),
-        country=body.get("country"),
-        description=body.get("description"),
-        latitud=body.get("latitud"),
-        longitud=body.get("longitud")
-    )
-    db.session.add(new_restaurant)
-    db.session.commit()
+    image_url = body.get("image_url", "")
 
-    return jsonify({"msg": "Restaurante creado exitosamente", "restaurant": new_restaurant.serialize()}), 201
+    # 🪄 MAGIA DE CLOUDINARY: Intercepción y Subida
+    # Verificamos si hay un link y si NO es un link que ya pertenece a Cloudinary
+    if image_url and "res.cloudinary.com" not in image_url:
+        try:
+            print(f"Subiendo a Cloudinary la imagen: {image_url}")
+            # Le pedimos a Cloudinary que descargue la imagen de Pexels y la guarde
+            upload_result = cloudinary.uploader.upload(
+                image_url, 
+                folder="app_restaurantes" # Organiza tus fotos en esta carpeta
+            )
+            # Sobrescribimos nuestra variable local con el link seguro de Cloudinary
+            image_url = upload_result.get('secure_url')
+            print(f"Éxito. Nuevo link generado: {image_url}")
+        except Exception as e:
+            print(f"Error subiendo a Cloudinary: {e}")
+            # Si falla, no rompemos el servidor, pero le avisamos al frontend
+            return jsonify({"msg": f"Error subiendo imagen a Cloudinary: Verifique que la URL {image_url} sea pública."}), 400
 
+    try:
+        new_restaurant = Restaurant(
+            name=body.get("name"),
+            image_url=image_url, # Usamos la variable que quizás Cloudinary ya modificó
+            food_type=body.get("food_type"),
+            score=body.get("score", 0),
+            cuisine_origin=body.get("cuisine_origin"),
+            city=body.get("city"),
+            country=body.get("country"),
+            description=body.get("description"),
+            latitud=body.get("latitud"),
+            longitud=body.get("longitud")
+        )
+        db.session.add(new_restaurant)
+        db.session.commit()
 
-# EDITAR restaurante (PUT)
+        return jsonify({"msg": "Restaurante creado exitosamente", "restaurant": new_restaurant.serialize()}), 201
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Error interno en base de datos: {str(e)}"}), 500
+
+# ====================================================================
+# 📝 EDITAR RESTAURANTE (PUT)
+# ====================================================================
 @api.route('/restaurants/<int:restaurant_id>', methods=['PUT'])
 @jwt_required()
 def update_restaurant(restaurant_id):
@@ -136,31 +174,44 @@ def update_restaurant(restaurant_id):
         return jsonify({"msg": "Restaurante no encontrado"}), 404
 
     body = request.get_json()
+    if not body:
+        return jsonify({"msg": "No se enviaron datos para actualizar"}), 400
 
-    if "name" in body:
-        restaurant.name = body["name"]
+    # Lógica para la imagen
     if "image_url" in body:
-        restaurant.image_url = body["image_url"]
-    if "food_type" in body:
-        restaurant.food_type = body["food_type"]
-    if "cuisine_origin" in body:
-        restaurant.cuisine_origin = body["cuisine_origin"]
-    if "description" in body:
-        restaurant.description = body["description"]
-    if "city" in body:
-        restaurant.city = body["city"]
-    if "country" in body:
-        restaurant.country = body["country"]
-    if "score" in body:
-        restaurant.score = body["score"]
-    if "latitud" in body:
-        restaurant.latitud = body["latitud"]
-    if "longitud" in body:
-        restaurant.longitud = body["longitud"]
+        incoming_image_url = body["image_url"]
+        
+        # 🪄 MAGIA DE CLOUDINARY: Verificamos si mandaron un link nuevo que NO es de Cloudinary
+        if incoming_image_url and incoming_image_url != restaurant.image_url and "res.cloudinary.com" not in incoming_image_url:
+            try:
+                print(f"Subiendo a Cloudinary nueva imagen: {incoming_image_url}")
+                upload_result = cloudinary.uploader.upload(incoming_image_url, folder="app_restaurantes")
+                restaurant.image_url = upload_result.get('secure_url')
+            except Exception as e:
+                print(f"Error subiendo a Cloudinary en actualización: {e}")
+                return jsonify({"msg": "Error procesando la nueva imagen con Cloudinary."}), 400
+        else:
+            # Si es el mismo link de antes, o es un link de cloudinary, lo guardamos tal cual
+            restaurant.image_url = incoming_image_url
 
-    db.session.commit()
-    return jsonify({"msg": "Restaurante actualizado", "restaurant": restaurant.serialize()}), 200
+    # Actualizamos el resto de campos si vienen en el body
+    if "name" in body: restaurant.name = body["name"]
+    if "food_type" in body: restaurant.food_type = body["food_type"]
+    if "cuisine_origin" in body: restaurant.cuisine_origin = body["cuisine_origin"]
+    if "description" in body: restaurant.description = body["description"]
+    if "city" in body: restaurant.city = body["city"]
+    if "country" in body: restaurant.country = body["country"]
+    if "score" in body: restaurant.score = body["score"]
+    if "latitud" in body: restaurant.latitud = body["latitud"]
+    if "longitud" in body: restaurant.longitud = body["longitud"]
 
+    try:
+        db.session.commit()
+        return jsonify({"msg": "Restaurante actualizado", "restaurant": restaurant.serialize()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Error guardando cambios: {str(e)}"}), 500
+    
 # ELIMINAR (DELETE)
 
 
