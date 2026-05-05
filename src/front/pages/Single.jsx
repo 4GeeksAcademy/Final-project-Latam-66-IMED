@@ -278,10 +278,13 @@ export const Single = () => {
                                     type="number" className="form-control" placeholder="Puntaje (0-100)" max="100" min="0" style={{ maxWidth: "150px" }}
                                     value={newScore} onChange={(e) => setNewScore(e.target.value)}
                                 />
-                                <input
-                                    type="text" className="form-control" placeholder="Escribe tu comentario aquí..."
-                                    value={newText} onChange={(e) => setNewText(e.target.value)}
-                                />
+                                <textarea
+                                    className="form-control"
+                                    rows="3"
+                                    placeholder="Escribe tu comentario aquí..."
+                                    value={newText}
+                                    onChange={(e) => setNewText(e.target.value)}
+                                ></textarea>
                                 {/* INPUT PARA LA FOTO */}
                                 <input
                                     type="file"
@@ -290,6 +293,27 @@ export const Single = () => {
                                     multiple
                                     onChange={handleFileChange}
                                 />
+
+                                {/* --- PREVISUALIZACIÓN DE FOTOS --- */}
+                                {newPhotos && newPhotos.length > 0 && (
+                                    <div className="d-flex gap-2 mt-3 mb-3">
+                                        {newPhotos.map((foto, index) => (
+                                            <div key={index} style={{ position: "relative" }}>
+                                                <img
+                                                    src={URL.createObjectURL(foto)}
+                                                    alt={`Previsualización ${index + 1}`}
+                                                    style={{
+                                                        width: "80px",
+                                                        height: "80px",
+                                                        objectFit: "cover",
+                                                        borderRadius: "8px",
+                                                        boxShadow: "0px 2px 5px rgba(0,0,0,0.2)"
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
 
 
