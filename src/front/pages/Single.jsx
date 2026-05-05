@@ -311,76 +311,108 @@ export const Single = () => {
                 className="card shadow-sm p-4 mb-5 rounded-4 border-0 bg-white"
                 style={{ borderLeft: "5px solid #D32F2F !important" }}
               >
-                {/* NUEVO: Cambia el título si estamos editando */}
                 <h5 className="fw-bold mb-3">
                   {editingId ? "Editando tu reseña" : "Deja tu puntuación"}
                 </h5>
-                <div className="d-flex flex-column flex-md-row gap-3">
-                  <input
-                    type="text" // Usamos text para tener control total del string
-                    inputMode="numeric" // Fuerz a abrir el teclado numérico en celulares
-                    pattern="[0-9]*" // Ayuda a la semántica móvil
-                    className="form-control"
-                    placeholder="Puntaje (0-100)"
-                    style={{ maxWidth: "150px" }}
-                    value={newScore}
-                    onChange={(e) => {
-                      // 1. Extraemos el valor y usamos Regex (\D) para eliminar CUALQUIER caracter que no sea número (letras, -, ., e, +)
-                      let val = e.target.value.replace(/\D/g, "");
 
-                      // 2. Si el input está vacío (el usuario borró todo), actualizamos el estado a vacío
-                      if (val === "") {
-                        setNewScore("");
-                        return;
-                      }
+                {/* --- CONTENEDOR PRINCIPAL DEL FORMULARIO ESTILO PROFESIONAL --- */}
+                <div className="border p-3 rounded mb-2" style={{ backgroundColor: "#fcfcfc" }}>
+                    
+                    {/* Fila 1: Puntaje */}
+                    <div className="mb-3" style={{ maxWidth: "150px" }}>
+                        <input
+                            type="text" 
+                            inputMode="numeric" 
+                            pattern="[0-9]*" 
+                            className="form-control"
+                            placeholder="Puntaje (0-100)"
+                            value={newScore}
+                            onChange={(e) => {
+                              let val = e.target.value.replace(/\D/g, "");
+                              if (val === "") {
+                                setNewScore("");
+                                return;
+                              }
+                              let num = parseInt(val, 10);
+                              if (num >= 0 && num <= 100) {
+                                setNewScore(num.toString());
+                              }
+                            }}
+                        />
+                    </div>
 
-                      // 3. Convertimos el string a un número entero
-                      let num = parseInt(val, 10);
+                    {/* Fila 2: Área de texto ancha */}
+                    <div className="mb-3">
+                        <textarea
+                            className="form-control"
+                            rows="3"
+                            placeholder="Escribe tu comentario aquí..."
+                            value={newText}
+                            onChange={(e) => setNewText(e.target.value)}
+                        ></textarea>
+                    </div>
 
-                      // 4. Validamos la regla de negocio: Debe ser entre 0 y 100 (máximo 3 dígitos por naturaleza)
-                      if (num >= 0 && num <= 100) {
-                        // Guardamos el número convertido a string.
-                        // Esto elimina automáticamente ceros a la izquierda (ej: si escribe "05", se guarda "5")
-                        setNewScore(num.toString());
-                      }
-                    }}
-                  />
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Escribe tu comentario aquí..."
-                    value={newText}
-                    onChange={(e) => setNewText(e.target.value)}
-                  />
-                  {/* INPUT PARA LA FOTO */}
-                  <input
-                    type="file"
-                    className="form-control"
-                    accept="image/*"
-                    multiple
-                    onChange={handleFileChange}
-                  />
+                    {/* Fila 3: Controles inferiores (Fotos y Botones) */}
+                    <div className="d-flex justify-content-between align-items-end flex-wrap gap-3">
+                        
+                        {/* Lado Izquierdo: Input de fotos y Previsualización */}
+                        <div className="d-flex align-items-center gap-3">
+                            <div style={{ maxWidth: "250px" }}>
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                            
+                            {/* Previsualización en miniatura */}
+                            {newPhotos && newPhotos.length > 0 && (
+                                <div className="d-flex gap-2">
+                                    {newPhotos.map((foto, index) => (
+                                        <img
+                                            key={index}
+                                            src={URL.createObjectURL(foto)}
+                                            alt={`Preview ${index + 1}`}
+                                            style={{
+                                                width: "45px",
+                                                height: "45px",
+                                                objectFit: "cover",
+                                                borderRadius: "6px",
+                                                boxShadow: "0px 2px 4px rgba(0,0,0,0.15)"
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
-                  <button
-                    onClick={handleSendComment}
-                    className="btn btn-primary px-4 fw-bold rounded-3"
-                    style={{ backgroundColor: "#D32F2F", border: "none" }}
-                  >
-                    {editingId ? "Guardar" : "Enviar"}
-                  </button>
-                  {/* NUEVO: Botón de cancelar edición */}
-                  {editingId && (
-                    <button
-                      onClick={() => {
-                        setEditingId(null);
-                        setNewScore("");
-                        setNewText("");
-                      }}
-                      className="btn btn-secondary px-4 fw-bold rounded-3"
-                    >
-                      Cancelar
-                    </button>
-                  )}
+                        {/* Lado Derecho: Botones de Enviar y Cancelar */}
+                        <div className="d-flex gap-2">
+                            {editingId && (
+                                <button
+                                    onClick={() => {
+                                        setEditingId(null);
+                                        setNewScore("");
+                                        setNewText("");
+                                        setNewPhotos([]); 
+                                    }}
+                                    className="btn btn-secondary px-4 fw-bold rounded-3"
+                                >
+                                    Cancelar
+                                </button>
+                            )}
+                            <button 
+                                onClick={handleSendComment}
+                                className="btn btn-primary px-4 fw-bold rounded-3"
+                                style={{ backgroundColor: "#D32F2F", border: "none" }}
+                            >
+                                {editingId ? "Guardar" : "Enviar"}
+                            </button>
+                        </div>
+                        
+                    </div>
                 </div>
               </div>
             ) : (
