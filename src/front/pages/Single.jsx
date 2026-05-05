@@ -89,9 +89,13 @@ export const Single = () => {
             const formData = new FormData();
             formData.append("score", parseInt(newScore));
             formData.append("text", newText);
-            newPhotos.forEach((photo) => {
-                formData.append("photo", photo);
-            });
+
+            // Le ponemos un candado de seguridad: solo iterar si newPhotos no es nulo
+            if (newPhotos) {
+                newPhotos.forEach((photo) => {
+                    formData.append("photo", photo);
+                });
+            }
 
             const resp = await fetch(url, {
                 method: method,
