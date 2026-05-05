@@ -498,20 +498,42 @@ def update_comment(comment_id):
     if score:
         comment.score = int(score)
 
-    # se modifico esta parte para por subir fotos cuando editamos un comentario
-    if 'photo' in request.files:
-        files = request.files.getlist('photo')
-        uploaded_urls = []
-        for file in files[:3]:
-            if file.filename != '':
-                upload_result = cloudinary.uploader.upload(file)
-                uploaded_urls.append(upload_result['secure_url'])
+    # ==========================================
+    # LÓGICA CORREGIDA PARA FOTOS EN EDICIÓN
+    # ==========================================
+    
+    # Verificamos si el frontend nos avisó que estamos editando la sección de fotos
+    if request.form.get("editing_photos") == "true":
+        
+        # 1. Recuperamos las fotos que el usuario decidió NO borrar
+        kept_photos = request.form.getlist("kept_photos[]")
+        if not kept_photos:
+            kept_photos = request.form.getlist("kept_photos") # Fallback
+            
+        current_photos = kept_photos.copy()
 
-        # Guardamos la lista en la DB
-        if uploaded_urls:
-            comment.photo_urls = uploaded_urls
-            # Fuerza a la DB a guardar el JSON modificado
-            flag_modified(comment, "photo_urls")
+        # 2. Procesamos las fotos nuevas si enviaron alguna
+        if 'photo' in request.files:
+            files = request.files.getlist('photo')
+            
+            # Calculamos cuánto espacio nos queda (Límite de 3)
+            espacio_disponible = 3 - len(current_photos)
+            
+            if espacio_disponible > 0:
+                for file in files[:espacio_disponible]:
+                    if file.filename != '':
+                        # Mantenemos los nombres originales de los archivos en Cloudinary
+                        upload_result = cloudinary.uploader.upload(
+                            file,
+                            use_filename=True,
+                            unique_filename=False
+                        )
+                        current_photos.append(upload_result['secure_url'])
+
+        # 3. Guardamos la lista combinada (viejas + nuevas) en la base de datos
+        comment.photo_urls = current_photos
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(comment, "photo_urls")
 
     db.session.commit()
     return jsonify({"msg": "Comentario actualizado", "comment": comment.serialize()}), 200
