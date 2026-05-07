@@ -58,7 +58,7 @@ export const Contacto = () => {
                                     name="name"
                                     value={formData.name}
                                     onChange={handleChange}
-                                    className="form-control bg-black text-light border-secondary"
+                                    className="form-control fw-bold border-secondary"
                                     placeholder="Ej: Juan Pérez"
                                     required
                                 />
@@ -70,7 +70,7 @@ export const Contacto = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="form-control bg-black text-light border-secondary"
+                                    className="form-control fw-bold border-secondary"
                                     placeholder="juan@ejemplo.com"
                                     required
                                 />
@@ -81,7 +81,7 @@ export const Contacto = () => {
                                     name="message"
                                     value={formData.message}
                                     onChange={handleChange}
-                                    className="form-control bg-black text-light border-secondary"
+                                    className="form-control border-secondary"
                                     rows="5"
                                     placeholder="Cuéntanos en qué podemos ayudarte..."
                                     required
