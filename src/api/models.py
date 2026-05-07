@@ -69,6 +69,12 @@ class Restaurant(db.Model):
     latitud = db.Column(db.Float, nullable=True)
     longitud = db.Column(db.Float, nullable=True)
 
+    # Esto borrará automáticamente todo lo asociado al borrar el restaurante.
+    reviews = db.relationship('Review', back_populates='restaurant', cascade="all, delete-orphan")
+    favorites = db.relationship('Favorite', back_populates='restaurant', cascade="all, delete-orphan")
+    places_to_visit = db.relationship('PlaceToVisit', back_populates='restaurant', cascade="all, delete-orphan")
+    comments = db.relationship('Comment', back_populates='restaurant', cascade="all, delete-orphan")
+
     def serialize(self):
         return {
             "id": self.id,
@@ -93,19 +99,18 @@ class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # Llaves foráneas: conectan la reseña con un usuario y un restaurante
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    restaurant_id = db.Column(db.Integer, db.ForeignKey(
-        'restaurant.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
 
     # Relación para acceder a los datos del restaurante fácilmente
-    restaurant = db.relationship('Restaurant')
+    restaurant = db.relationship('Restaurant', back_populates='reviews')
 
     def serialize(self):
         return {
             "id": self.id,
-            "restaurant_id": self.restaurant.id,
-            "restaurant_name": self.restaurant.name,
+            "restaurant_id": self.restaurant.id if self.restaurant else None,
+            "restaurant_name": self.restaurant.name if self.restaurant else "Desconocido",
             "rating": self.rating,
             "comment": self.comment
         }
@@ -117,12 +122,12 @@ class Favorite(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey(
         'restaurant.id'), nullable=False)
 
-    restaurant = db.relationship('Restaurant')
+    restaurant = db.relationship('Restaurant', back_populates='favorites')
 
     def serialize(self):
         return {
             "id": self.id,
-            "restaurant": self.restaurant.serialize()
+            "restaurant": self.restaurant.serialize() if self.restaurant else None
         }
 
 
@@ -132,12 +137,12 @@ class PlaceToVisit(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey(
         'restaurant.id'), nullable=False)
 
-    restaurant = db.relationship('Restaurant')
+    restaurant = db.relationship('Restaurant', back_populates='places_to_visit')
 
     def serialize(self):
         return {
             "id": self.id,
-            "restaurant": self.restaurant.serialize()
+            "restaurant": self.restaurant.serialize() if self.restaurant else None
         }
 
 
@@ -153,22 +158,16 @@ class Comment(db.Model):
     photo_urls = db.Column(db.JSON, nullable=True, default=[])
 
     # Relaciones
-    user = db.relationship('User', backref='comments')
+    user = db.relationship('User', backref='comments_list')
     # Añadido para acceder al nombre del restaurante desde el perfil
-    restaurant = db.relationship('Restaurant')
+    restaurant = db.relationship('Restaurant', back_populates='comments')
 
     def serialize(self):
 
         # Determinamos qué nombre mostrar para que nunca salga vacío
         display_name = "Usuario"
         if self.user:
-            if self.user.username:
-                display_name = self.user.username
-            elif self.user.full_name:
-                display_name = self.user.full_name
-            else:
-                # Corta el texto antes del @ del correo
-                display_name = self.user.email.split('@')[0]
+            display_name = self.user.username or self.user.full_name or self.user.email.split('@')[0]
 
         return {
             "id": self.id,

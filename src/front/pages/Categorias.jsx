@@ -2,58 +2,64 @@ import React, { useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
+const optimizePexels = (url) => {
+    if (!url.includes("pexels.com")) return url;
+    const baseUrl = url.split("?")[0];
+    return `${baseUrl}?auto=compress&cs=tinysrgb&fit=crop&h=400&w=400`;
+};
+
 // Diccionario de imágenes
 const imageDictionary = {
-    "Alemana": "https://images.pexels.com/photos/33753896/pexels-photo-33753896.jpeg",
-    "Árabe": "https://images.pexels.com/photos/17650198/pexels-photo-17650198.jpeg",
-    "Argentina": "https://images.pexels.com/photos/37069410/pexels-photo-37069410.jpeg",
-    "Australiana": "https://images.pexels.com/photos/7368043/pexels-photo-7368043.jpeg",
-    "Austríaca": "https://images.pexels.com/photos/33859572/pexels-photo-33859572.jpeg",
-    "Belga": "https://images.pexels.com/photos/18857730/pexels-photo-18857730.jpeg",
-    "Brasileña": "https://images.pexels.com/photos/34234280/pexels-photo-34234280.png",
-    "Británica": "https://images.pexels.com/photos/30776098/pexels-photo-30776098.jpeg",
-    "Canadiense": "https://images.pexels.com/photos/35896261/pexels-photo-35896261.jpeg",
-    "Chilena": "https://images.pexels.com/photos/37342041/pexels-photo-37342041.jpeg",
-    "China": "https://images.pexels.com/photos/16211353/pexels-photo-16211353.jpeg",
-    "Colombiana": "https://images.pexels.com/photos/37024910/pexels-photo-37024910.jpeg",
-    "Coreana": "https://images.pexels.com/photos/7491952/pexels-photo-7491952.jpeg",
-    "Costarricense": "https://images.pexels.com/photos/29450678/pexels-photo-29450678.jpeg",
-    "Cubana": "https://images.pexels.com/photos/16931501/pexels-photo-16931501.jpeg",
-    "Danesa": "https://images.pexels.com/photos/37308545/pexels-photo-37308545.jpeg",
-    "Ecuatoriana": "https://images.pexels.com/photos/28490852/pexels-photo-28490852.jpeg",
-    "Egipcia": "https://images.pexels.com/photos/10445962/pexels-photo-10445962.jpeg",
-    "Emiratí": "https://images.pexels.com/photos/18177331/pexels-photo-18177331.jpeg",
-    "Española": "https://images.pexels.com/photos/36878063/pexels-photo-36878063.jpeg",
-    "Estadounidense": "https://images.pexels.com/photos/12325094/pexels-photo-12325094.jpeg",
-    "Finlandesa": "https://images.pexels.com/photos/32112098/pexels-photo-32112098.jpeg",
-    "Francesa": "https://images.pexels.com/photos/27304303/pexels-photo-27304303.jpeg",
-    "Griega": "https://images.pexels.com/photos/5864352/pexels-photo-5864352.jpeg",
-    "India": "https://images.pexels.com/photos/29089211/pexels-photo-29089211.jpeg",
-    "Indonesa": "https://images.pexels.com/photos/8570300/pexels-photo-8570300.jpeg",
-    "Irlandesa": "https://images.pexels.com/photos/15913598/pexels-photo-15913598.jpeg",
-    "Islandesa": "https://images.pexels.com/photos/7634205/pexels-photo-7634205.jpeg",
-    "Israelí": "https://images.pexels.com/photos/28992227/pexels-photo-28992227.jpeg",
-    "Italiana": "https://images.pexels.com/photos/17708242/pexels-photo-17708242.jpeg",
-    "Jamaiquina": "https://images.pexels.com/photos/27556985/pexels-photo-27556985.jpeg",
-    "Japonesa": "https://images.pexels.com/photos/28291554/pexels-photo-28291554.jpeg",
-    "Marroquí": "https://images.pexels.com/photos/30459912/pexels-photo-30459912.jpeg",
-    "Mexicana": "https://images.pexels.com/photos/12034501/pexels-photo-12034501.jpeg",
-    "Neerlandesa": "https://images.pexels.com/photos/28911031/pexels-photo-28911031.jpeg",
-    "Neozelandesa": "https://images.pexels.com/photos/17377699/pexels-photo-17377699.jpeg",
-    "Noruega": "https://images.pexels.com/photos/33673809/pexels-photo-33673809.jpeg",
-    "Panameña": "https://images.pexels.com/photos/37039787/pexels-photo-37039787.jpeg",
-    "Peruana": "https://images.pexels.com/photos/31495671/pexels-photo-31495671.jpeg",
-    "Polaca": "https://images.pexels.com/photos/4084925/pexels-photo-4084925.jpeg",
-    "Portuguesa": "https://images.pexels.com/photos/4198421/pexels-photo-4198421.jpeg",
-    "Rusa": "https://images.pexels.com/photos/32020817/pexels-photo-32020817.jpeg",
-    "Singapurense": "https://images.pexels.com/photos/9772442/pexels-photo-9772442.jpeg",
-    "Sudafricana": "https://images.pexels.com/photos/35470468/pexels-photo-35470468.jpeg",
-    "Sueca": "https://images.pexels.com/photos/33254065/pexels-photo-33254065.jpeg",
-    "Suiza": "https://images.pexels.com/photos/12664804/pexels-photo-12664804.jpeg",
-    "Tailandesa": "https://images.pexels.com/photos/12188535/pexels-photo-12188535.jpeg",
-    "Turca": "https://images.pexels.com/photos/18330996/pexels-photo-18330996.jpeg",
-    "Uruguaya": "https://images.pexels.com/photos/11957828/pexels-photo-11957828.jpeg",
-    "Venezolana": "https://images.pexels.com/photos/29496088/pexels-photo-29496088.jpeg",
+    "Alemana": optimizePexels("https://images.pexels.com/photos/33753896/pexels-photo-33753896.jpeg"),
+    "Austríaca": optimizePexels("https://images.pexels.com/photos/33859572/pexels-photo-33859572.jpeg"),
+    "Belga": optimizePexels("https://images.pexels.com/photos/18857730/pexels-photo-18857730.jpeg"),
+    "Danesa": optimizePexels("https://images.pexels.com/photos/37308545/pexels-photo-37308545.jpeg"),
+    "Española": optimizePexels("https://images.pexels.com/photos/36878063/pexels-photo-36878063.jpeg"),
+    "Finlandesa": optimizePexels("https://images.pexels.com/photos/32112098/pexels-photo-32112098.jpeg"),
+    "Francesa": optimizePexels("https://images.pexels.com/photos/27304303/pexels-photo-27304303.jpeg"),
+    "Griega": optimizePexels("https://images.pexels.com/photos/5864352/pexels-photo-5864352.jpeg"),
+    "Irlandesa": optimizePexels("https://images.pexels.com/photos/15913598/pexels-photo-15913598.jpeg"),
+    "Islandesa": optimizePexels("https://images.pexels.com/photos/7634205/pexels-photo-7634205.jpeg"),
+    "Italiana": optimizePexels("https://images.pexels.com/photos/17708242/pexels-photo-17708242.jpeg"),
+    "Noruega": optimizePexels("https://images.pexels.com/photos/33673809/pexels-photo-33673809.jpeg"),
+    "Neerlandesa": optimizePexels("https://images.pexels.com/photos/28911031/pexels-photo-28911031.jpeg"),
+    "Polaca": optimizePexels("https://images.pexels.com/photos/4084925/pexels-photo-4084925.jpeg"),
+    "Portuguesa": optimizePexels("https://images.pexels.com/photos/4198421/pexels-photo-4198421.jpeg"),
+    "Británica": optimizePexels("https://images.pexels.com/photos/30776098/pexels-photo-30776098.jpeg"),
+    "Rusa": optimizePexels("https://images.pexels.com/photos/32020817/pexels-photo-32020817.jpeg"),
+    "Sueca": optimizePexels("https://images.pexels.com/photos/33254065/pexels-photo-33254065.jpeg"),
+    "Suiza": optimizePexels("https://images.pexels.com/photos/12664804/pexels-photo-12664804.jpeg"),
+    "Turca": optimizePexels("https://images.pexels.com/photos/18330996/pexels-photo-18330996.jpeg"),
+    "Argentina": optimizePexels("https://images.pexels.com/photos/37069410/pexels-photo-37069410.jpeg"),
+    "Brasileña": optimizePexels("https://images.pexels.com/photos/34234280/pexels-photo-34234280.png"),
+    "Canadiense": optimizePexels("https://images.pexels.com/photos/35896261/pexels-photo-35896261.jpeg"),
+    "Chilena": optimizePexels("https://images.pexels.com/photos/37342041/pexels-photo-37342041.jpeg"),
+    "Colombiana": optimizePexels("https://images.pexels.com/photos/37024910/pexels-photo-37024910.jpeg"),
+    "Costarricense": optimizePexels("https://images.pexels.com/photos/29450678/pexels-photo-29450678.jpeg"),
+    "Cubana": optimizePexels("https://images.pexels.com/photos/16931501/pexels-photo-16931501.jpeg"),
+    "Ecuatoriana": optimizePexels("https://images.pexels.com/photos/28490852/pexels-photo-28490852.jpeg"),
+    "Estadounidense": optimizePexels("https://images.pexels.com/photos/12325094/pexels-photo-12325094.jpeg"),
+    "Jamaiquina": optimizePexels("https://images.pexels.com/photos/27556985/pexels-photo-27556985.jpeg"),
+    "Mexicana": optimizePexels("https://images.pexels.com/photos/12034501/pexels-photo-12034501.jpeg"),
+    "Panameña": optimizePexels("https://images.pexels.com/photos/37039787/pexels-photo-37039787.jpeg"),
+    "Peruana": optimizePexels("https://images.pexels.com/photos/31495671/pexels-photo-31495671.jpeg"),
+    "Uruguaya": optimizePexels("https://images.pexels.com/photos/11957828/pexels-photo-11957828.jpeg"),
+    "Venezolana": optimizePexels("https://images.pexels.com/photos/29496088/pexels-photo-29496088.jpeg"),
+    "Australiana": optimizePexels("https://images.pexels.com/photos/7368043/pexels-photo-7368043.jpeg"),
+    "Saudí": optimizePexels("https://images.pexels.com/photos/17650198/pexels-photo-17650198.jpeg"),
+    "China": optimizePexels("https://images.pexels.com/photos/16211353/pexels-photo-16211353.jpeg"),
+    "Coreana": optimizePexels("https://images.pexels.com/photos/7491952/pexels-photo-7491952.jpeg"),
+    "Emiratí": optimizePexels("https://images.pexels.com/photos/18177331/pexels-photo-18177331.jpeg"),
+    "India": optimizePexels("https://images.pexels.com/photos/29089211/pexels-photo-29089211.jpeg"),
+    "Indonesa": optimizePexels("https://images.pexels.com/photos/8570300/pexels-photo-8570300.jpeg"),
+    "Israelí": optimizePexels("https://images.pexels.com/photos/28992227/pexels-photo-28992227.jpeg"),
+    "Japonesa": optimizePexels("https://images.pexels.com/photos/28291554/pexels-photo-28291554.jpeg"),
+    "Neozelandesa": optimizePexels("https://images.pexels.com/photos/17377699/pexels-photo-17377699.jpeg"),
+    "Singapurense": optimizePexels("https://images.pexels.com/photos/9772442/pexels-photo-9772442.jpeg"),
+    "Tailandesa": optimizePexels("https://images.pexels.com/photos/12188535/pexels-photo-12188535.jpeg"),
+    "Egipcia": optimizePexels("https://images.pexels.com/photos/10445962/pexels-photo-10445962.jpeg"),
+    "Marroquí": optimizePexels("https://images.pexels.com/photos/30459912/pexels-photo-30459912.jpeg"),
+    "Sudafricana": optimizePexels("https://images.pexels.com/photos/35470468/pexels-photo-35470468.jpeg"),
 };
 
 const defaultImage = "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80";
@@ -66,25 +72,21 @@ export const Categorias = () => {
 
     // EFECTO DE RESCATE: Busca restaurantes si llegamos a la página vacía
     useEffect(() => {
-        const fetchRestaurants = async () => {
-            try {
-                const resp = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/restaurants");
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (dispatch) {
+        if (!store?.restaurants || store.restaurants.length === 0) {
+            const fetchRestaurants = async () => {
+                try {
+                    const resp = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/restaurants");
+                    if (resp.ok) {
+                        const data = await resp.json();
                         dispatch({ type: "set_restaurants", payload: data });
                     }
+                } catch (error) {
+                    console.error("Error cargando:", error);
                 }
-            } catch (error) {
-                console.error("Error cargando restaurantes:", error);
-            }
-        };
-
-        // Verificamos de forma segura usando "?."
-        if (!store?.restaurants || store.restaurants.length === 0) {
+            };
             fetchRestaurants();
         }
-    }, [store?.restaurants, dispatch]); // Dependencias seguras
+    }, []);
 
     // Calculamos la lista protegiendo todas las lecturas con "?."
     const categoriasList = useMemo(() => {
@@ -95,7 +97,7 @@ export const Categorias = () => {
         
         const dynamicCategories = uniqueFoodTypes.map(type => ({
             name: type,
-            img: imageDictionary[type] || defaultImage 
+            img: imageDictionary[type] ? optimizePexels(imageDictionary[type]) : defaultImage 
         }));
 
         // Mezclamos al azar
@@ -137,7 +139,7 @@ export const Categorias = () => {
                                         e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
                                     }}
                                 >
-                                    <img src={cat.img} alt={cat.name} className="position-absolute w-100 h-100 object-fit-cover" />
+                                    <img src={cat.img} alt={cat.name} loading="lazy" className="position-absolute w-100 h-100 object-fit-cover" />
                                     <div className="position-absolute w-100 h-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.45)" }}>
                                         <h3 className="text-white fw-bold mb-0 text-uppercase tracking-wider text-center px-2" style={{ letterSpacing: "2px" }}>
                                             {cat.name}
