@@ -43,7 +43,7 @@ class User(db.Model):
             "age": self.age,
             "bio": self.bio,
             "profile_picture": self.profile_picture,
-            "reviews": [review.serialize() for review in self.reviews]
+            "review_count": len(self.reviews) + len(self.comments_list)
         }
 
 # tabla de restaurantes o base de datos de restaurantes
