@@ -173,8 +173,10 @@ export const Single = () => {
   if (loading) return <div className="text-center py-5 mt-5"><h5><i className="fas fa-spinner fa-spin me-2"></i>Cargando...</h5></div>;
   if (!restaurant) return <div className="text-center py-5 mt-5"><h2 className="text-danger">No encontrado</h2><Link to="/" className="btn btn-primary">Volver</Link></div>;
 
+  // --- FUNCIÓN DE RATING ACTUALIZADA CON 5 NIVELES ---
   const getRankingConfig = (score) => {
-    if (score >= 80) return { label: "Excelente", color: "#198754", shadow: "rgba(25, 135, 84, 0.2)" };
+    if (score >= 90) return { label: "Excelente", color: "#1B5E20", shadow: "rgba(27, 94, 32, 0.2)" };
+    if (score >= 80) return { label: "Muy Bueno", color: "#2E7D32", shadow: "rgba(46, 125, 50, 0.2)" };
     if (score >= 60) return { label: "Bueno", color: "#0d6efd", shadow: "rgba(13, 110, 253, 0.2)" };
     if (score >= 40) return { label: "Regular", color: "#ffc107", shadow: "rgba(255, 193, 7, 0.2)" };
     return { label: "Malo", color: "#dc3545", shadow: "rgba(220, 53, 69, 0.2)" };

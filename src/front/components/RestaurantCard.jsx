@@ -7,7 +7,8 @@ export const RestaurantCard = ({ restaurant }) => {
     
     // Lógica dinámica de Puntuación y Colores
     const getRankingConfig = (score) => {
-        if (score >= 80) return { label: "Excelente", color: "#198754", shadow: "rgba(25, 135, 84, 0.3)" };
+        if (score >= 90) return { label: "Excelente", color: "#1B5E20", shadow: "rgba(27, 94, 32, 0.3)" };
+        if (score >= 80) return { label: "Muy Bueno", color: "#2E7D32", shadow: "rgba(46, 125, 50, 0.3)" };
         if (score >= 60) return { label: "Bueno", color: "#0d6efd", shadow: "rgba(13, 110, 253, 0.3)" };
         if (score >= 40) return { label: "Regular", color: "#ffc107", shadow: "rgba(255, 193, 7, 0.3)" };
         return { label: "Malo", color: "#dc3545", shadow: "rgba(220, 53, 69, 0.3)" };
@@ -44,7 +45,7 @@ export const RestaurantCard = ({ restaurant }) => {
                 className="position-absolute top-0 end-0 pt-2 px-2 text-center text-white fw-bold shadow-sm score-badge"
                 style={{ 
                     backgroundColor: config.color,
-                    width: "70px",
+                    width: "75px",
                     height: "90px",
                     zIndex: 10,
                     clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 50% 85%, 0% 100%)"
