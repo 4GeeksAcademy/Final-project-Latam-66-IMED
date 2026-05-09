@@ -55,34 +55,70 @@ export const Home = () => {
 
     const restaurantsList = store.restaurants || [];
 
-    // --- EXTRACCIÓN DINÁMICA ---
-    const uniqueCountries = [...new Set(restaurantsList.map(r => r.country).filter(Boolean))].sort();
-    const uniqueCities = [...new Set(restaurantsList
-        .filter(r => searchCountry === "" || r.country === searchCountry)
-        .map(r => r.city)
-        .filter(Boolean)
-    )].sort();
-    const uniqueFoodTypes = [...new Set(restaurantsList.map(r => r.food_type).filter(Boolean))].sort();
-    const uniqueOrigins = [...new Set(restaurantsList.map(r => r.cuisine_origin).filter(Boolean))].sort();
+    const simplify = (text) => {
+        if (!text) return "";
+        return text.trim()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+    };
+
+    const getUniqueItems = (list, field) => {
+        const itemsMap = {};
+        list.forEach(res => {
+            const original = res[field];
+            if (!original) return;
+
+            const normalized = simplify(original);
+            const formattedOriginal = original.trim().charAt(0).toUpperCase() + original.trim().slice(1).toLowerCase();
+
+            if (!itemsMap[normalized]) {
+                itemsMap[normalized] = formattedOriginal;
+            } else {
+                const isCurrentAccented = original !== original.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (isCurrentAccented) {
+                    itemsMap[normalized] = formattedOriginal;
+                }
+            }
+        });
+        return Object.values(itemsMap).sort();
+    };
+
+    // --- EXTRACCIÓN DINÁMICA (Normalizada) ---
+    const uniqueCountries = getUniqueItems(restaurantsList, 'country');
+
+    const currentCountryRestaurants = restaurantsList.filter(r =>
+        searchCountry === "" || simplify(r.country) === simplify(searchCountry)
+    );
+
+    const uniqueCities = getUniqueItems(currentCountryRestaurants, 'city');
+
+    const uniqueFoodTypes = getUniqueItems(restaurantsList, 'food_type');
+    const uniqueOrigins = getUniqueItems(restaurantsList, 'cuisine_origin');
 
     const getOptionCount = (key, value) => {
         if (key === "city" && searchCountry !== "") {
-            return restaurantsList.filter(r => r[key] === value && r.country === searchCountry).length;
+            return restaurantsList.filter(r =>
+                simplify(r[key]) === simplify(value) &&
+                simplify(r.country) === simplify(searchCountry)
+            ).length;
         }
-        return restaurantsList.filter(r => r[key] === value).length;
+        return restaurantsList.filter(r => simplify(r[key]) === simplify(value)).length;
     };
 
     // --- LÓGICA DE FILTRADO ACTUALIZADA ---
     const filteredRestaurants = restaurantsList.filter((rest) => {
         const query = searchTerm.toLowerCase();
         const name = rest.name ? rest.name.toLowerCase() : "";
-        const typeOfFood = rest.food_type ? rest.food_type.toLowerCase() : "";
-        
-        const matchSearch = name.includes(query) || typeOfFood.includes(query);
-        const matchType = foodType === "" || rest.food_type === foodType;
-        const matchOrigin = origin === "" || rest.cuisine_origin === origin;
-        const matchCity = searchCity === "" || rest.city === searchCity;
-        const matchCountry = searchCountry === "" || rest.country === searchCountry;
+        const typeOfFoodSearch = rest.food_type ? rest.food_type.toLowerCase() : "";
+
+        const matchSearch = name.includes(query) || typeOfFoodSearch.includes(query);
+
+        // Comparamos usando la versión simplificada (sin acentos)
+        const matchType = foodType === "" || simplify(rest.food_type) === simplify(foodType);
+        const matchOrigin = origin === "" || simplify(rest.cuisine_origin) === simplify(origin);
+        const matchCity = searchCity === "" || simplify(rest.city) === simplify(searchCity);
+        const matchCountry = searchCountry === "" || simplify(rest.country) === simplify(searchCountry);
 
         // NUEVA LÓGICA DE RATING POR RANGO
         let matchScore = true;
@@ -203,8 +239,8 @@ export const Home = () => {
                         )
                     ) : (
                         <div className="col-12 text-center py-5 w-100">
-                           <div className="spinner-border text-danger" role="status"></div>
-                           <p className="mt-2 text-muted">Cargando restaurantes...</p>
+                            <div className="spinner-border text-danger" role="status"></div>
+                            <p className="mt-2 text-muted">Cargando restaurantes...</p>
                         </div>
                     )}
                 </div>
