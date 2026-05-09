@@ -4,12 +4,13 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import { RestaurantCard } from "../components/RestaurantCard";
 import toast from "react-hot-toast";
 
+// --- ACTUALIZACIÓN DE COLORES PARA HACER MATCH CON RESTAURANTCARD ---
 const RATING_RANGES = [
-    { id: "malo", label: "Malo", min: 0, max: 39, color: "#D32F2F" },         // Rojo
-    { id: "regular", label: "Regular", min: 40, max: 59, color: "#FBC02D" },  // Amarillo
-    { id: "bueno", label: "Bueno", min: 60, max: 79, color: "#0d6efd" },     // Azul
-    { id: "muy_bueno", label: "Muy Bueno", min: 80, max: 89, color: "#2E7D32" }, // Verde
-    { id: "excelente", label: "Excelente", min: 90, max: 100, color: "#1B5E20" } // Verde Oscuro
+    { id: "malo", label: "Malo", min: 0, max: 39, color: "rgba(225, 29, 72, 1)" },         // Rojo Carmesí
+    { id: "regular", label: "Regular", min: 40, max: 59, color: "rgba(249, 115, 22, 1)" }, // Naranja Coral
+    { id: "bueno", label: "Bueno", min: 60, max: 79, color: "rgba(37, 99, 235, 1)" },      // Azul Safiro
+    { id: "muy_bueno", label: "Muy Bueno", min: 80, max: 89, color: "rgba(21, 128, 61, 1)" }, // Verde Bosque
+    { id: "excelente", label: "Excelente", min: 90, max: 100, color: "rgba(218, 165, 32, 1)" } // Dorado Intenso
 ];
 
 export const Home = () => {
@@ -161,24 +162,47 @@ export const Home = () => {
                         <div className="col-12 mt-4">
                             <label className="form-label text-muted fw-bold mb-2 d-block small">Puntuación Crítica (MetaScore)</label>
                             <div className="d-flex flex-wrap gap-2">
-                                {RATING_RANGES.map((range) => (
-                                    <button
-                                        key={range.id}
-                                        onClick={() => setSelectedRange(selectedRange?.id === range.id ? null : range)}
-                                        className="btn btn-sm rounded-pill px-3 fw-bold transition-all border-2"
-                                        style={{
-                                            borderColor: range.color,
-                                            backgroundColor: selectedRange?.id === range.id ? range.color : "transparent",
-                                            color: selectedRange?.id === range.id ? "#fff" : range.color,
-                                            fontSize: "0.75rem"
-                                        }}
-                                    >
-                                        {range.label} {range.id !== "top" && `(${range.min}-${range.max})`}
-                                    </button>
-                                ))}
+                                {RATING_RANGES.map((range) => {
+                                    const isSelected = selectedRange?.id === range.id;
+                                    const isExcellent = range.id === "excelente";
+                                    
+                                    // Lógica visual dinámica para replicar el "Look Premium"
+                                    const bgColor = isSelected 
+                                        ? (isExcellent ? "#000000" : range.color) 
+                                        : "transparent";
+                                        
+                                    const textColor = isSelected 
+                                        ? (isExcellent ? range.color : "#ffffff") 
+                                        : range.color;
+                                        
+                                    const borderColor = range.color;
+
+                                    return (
+                                        <button
+                                            key={range.id}
+                                            onClick={() => setSelectedRange(isSelected ? null : range)}
+                                            className="btn btn-sm rounded-pill px-3 fw-bold transition-all border-2 shadow-sm"
+                                            style={{
+                                                borderColor: borderColor,
+                                                backgroundColor: bgColor,
+                                                color: textColor,
+                                                fontSize: "0.75rem",
+                                                // Añadimos un sutil efecto glow cuando se selecciona "Excelente"
+                                                boxShadow: isSelected && isExcellent ? `0 0 10px ${range.color}80` : "none"
+                                            }}
+                                        >
+                                            {range.label} {range.id !== "top" && `(${range.min}-${range.max})`}
+                                        </button>
+                                    );
+                                })}
+                                
                                 {selectedRange && (
-                                    <button className="btn btn-link btn-sm text-muted text-decoration-none" onClick={() => setSelectedRange(null)}>
-                                        <i className="fas fa-times-circle me-1"></i>Quitar filtro
+                                    <button 
+                                        className="btn btn-link btn-sm text-muted text-decoration-none fw-bold" 
+                                        onClick={() => setSelectedRange(null)}
+                                        style={{ fontSize: "0.75rem" }}
+                                    >
+                                        <i className="fas fa-times-circle me-1 text-danger"></i>Quitar filtro
                                     </button>
                                 )}
                             </div>
