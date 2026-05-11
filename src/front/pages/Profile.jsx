@@ -199,7 +199,7 @@ export const Profile = () => {
 
                                 <button className="btn btn-outline-light rounded-pill mt-2 w-100" onClick={() => setIsEditing(true)}>
                                     Editar Perfil
-                                </button>
+                                </button>.   
                             </>
                         ) : (
                             <div className="text-start mt-3">
@@ -269,7 +269,12 @@ export const Profile = () => {
                         {profileData.reviews && profileData.reviews.length > 0 ? (
                             <div className="list-group mt-3">
                                 {profileData.reviews.map(review => (
-                                    <div key={review.id} className="list-group-item bg-dark text-light border border-secondary mb-3 rounded-3 shadow-sm">
+                                    <div
+                                        key={review.id}
+                                        className="list-group-item bg-dark text-light border border-secondary mb-3 rounded-3 shadow-sm"
+                                        style={{ cursor: "pointer" }}
+                                        onClick={() => navigate(`/restaurant/${review.restaurant_id}#seccion-comentarios`)}
+                                    >
                                         <div className="d-flex w-100 justify-content-between align-items-center mb-2">
 
                                             <h5 className="mb-0 fw-bold">
@@ -284,6 +289,19 @@ export const Profile = () => {
                                             </span>
                                         </div>
                                         <p className="mb-0 text-white-50">"{review.text}"</p>
+                                        {review.fotos && review.fotos.length > 0 && (
+                                        <div className="d-flex gap-2 mt-3 flex-wrap">
+                                            {review.fotos.map((urlFoto, indice) => (
+                                                <img 
+                                                    key={indice} 
+                                                    src={urlFoto} 
+                                                    alt="Foto del restaurante" 
+                                                    className="rounded shadow-sm"
+                                                    style={{ width: "120px", height: "120px", objectFit: "cover" }} 
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                     </div>
                                 ))}
                             </div>

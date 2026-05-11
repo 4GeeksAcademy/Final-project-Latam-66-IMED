@@ -15,6 +15,7 @@ import { Profile } from "./pages/Profile";
 import { Categorias } from "./pages/Categorias";
 import { AboutUs } from "./pages/AboutUs";
 import { Contacto } from "./pages/Contacto";
+import { PublicProfile } from "./pages/PublicProfile";
 
 // =========================================================
 // 🛡️ NUEVO: COMPONENTE DE MANEJO DE ERRORES (ERROR BOUNDARY)
@@ -47,6 +48,7 @@ export const router = createBrowserRouter(
       <Route path="categorias" element={<Categorias />} />
       <Route path="sobre-nosotros" element={<AboutUs />} />
       <Route path="contacto" element={<Contacto />} />
+      <Route path="user/:userId" element={<PublicProfile />} />
       
       {/* 3. Ruta comodín REAL para páginas que no existen (404) */}
       <Route path="*" element={<h1 className="text-center mt-5 text-white">404 - Página no encontrada</h1>} />

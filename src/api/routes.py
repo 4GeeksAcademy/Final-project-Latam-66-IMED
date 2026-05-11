@@ -289,7 +289,8 @@ def get_user_profile():
             "text": c.text,
             "score": c.score,
             "restaurant_id": c.restaurant_id,
-            "restaurant_name": Restaurant.query.get(c.restaurant_id).name if Restaurant.query.get(c.restaurant_id) else "Restaurante desconocido"
+            "restaurant_name": Restaurant.query.get(c.restaurant_id).name if Restaurant.query.get(c.restaurant_id) else "Restaurante desconocido",
+            "fotos": c.photo_urls
         } for c in comentarios_del_usuario],
         "favorites": [fav.serialize() for fav in user.favorites],
         "places_to_visit": [place.serialize() for place in user.places_to_visit]
@@ -559,3 +560,54 @@ def delete_comment(comment_id):
     db.session.delete(comment)
     db.session.commit()
     return jsonify({"msg": "Comentario eliminado exitosamente"}), 200
+
+# ==========================================
+# RUTA DE PERFIL PÚBLICO (Solo lectura)
+# ==========================================
+@api.route('/user/<int:user_id>', methods=['GET'])
+def get_public_profile(user_id):
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    # Buscamos los comentarios de ESTE usuario específico
+    comentarios_del_usuario = Comment.query.filter_by(user_id=user_id).all()
+    review_count = len(comentarios_del_usuario)
+
+    # Lógica de niveles e insignias
+    level = "Novato"
+    if review_count >= 15:
+        level = "Crítico experto"
+    elif review_count >= 5:
+        level = "Foodie"
+
+    badges = []
+    if review_count >= 10:
+        badges.append("Top Reviewer ⭐")
+    if len(user.favorites) >= 5:
+        badges.append("Cazador de Joyas ❤️")
+
+    return jsonify({
+        "user_info": {
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "profile_picture": user.profile_picture,
+            "country": user.country,
+            "city": user.city,
+            "bio": user.bio,
+            "age": user.age
+            # Nota: NO enviamos el email ni is_active por privacidad
+        },
+        "level": level,
+        "badges": badges,
+        "reviews": [{
+            "id": c.id,
+            "text": c.text,
+            "score": c.score,
+            "restaurant_id": c.restaurant_id,
+            "restaurant_name": Restaurant.query.get(c.restaurant_id).name if Restaurant.query.get(c.restaurant_id) else "Restaurante",
+            "fotos": c.photo_urls
+        } for c in comentarios_del_usuario]
+    }), 200

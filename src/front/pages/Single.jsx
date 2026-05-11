@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import toast from "react-hot-toast";
 import { RestaurantMap } from "../components/RestaurantMap";
 
 export const Single = () => {
   const { id } = useParams();
+  const location = useLocation();
+
+  
+
   const { store } = useGlobalReducer();
 
   const [restaurant, setRestaurant] = useState(null);
@@ -27,6 +31,18 @@ export const Single = () => {
   const [editText, setEditText] = useState("");
   const [editPhotos, setEditPhotos] = useState([]); // Nuevas fotos a agregar en la edición
   const [keptPhotos, setKeptPhotos] = useState([]); // Fotos viejas que el usuario decide conservar
+
+  useEffect(() => {
+    if (!loading && location.hash === "#seccion-comentarios") {
+        // Pequeño retraso para dar tiempo a que React pinte los comentarios
+        setTimeout(() => {
+            const seccion = document.getElementById("seccion-comentarios");
+            if (seccion) {
+                seccion.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }, 300);
+    }
+}, [loading, location]);
 
   // Maneja las fotos del comentario NUEVO
   const handleFileChange = (e) => {
@@ -257,7 +273,7 @@ export const Single = () => {
           )}
 
           {/* LISTA DE COMENTARIOS */}
-          <div className="d-flex flex-column gap-3">
+          <div id="seccion-comentarios" className="d-flex flex-column gap-3">
             {comments.length === 0 ? (
               <p className="text-muted">No hay reseñas aún.</p>
             ) : (
@@ -291,8 +307,10 @@ export const Single = () => {
                     {/* CUERPO DEL COMENTARIO */}
                     <div className="flex-grow-1">
                       <h6 className="mb-2 fw-bold text-dark">
-                        {c.username || "Usuario"}
-                        {editingId === c.id && <span className="text-primary ms-2 fs-6 fw-normal"><i className="fas fa-pen me-1"></i>Editando</span>}
+                        <Link to={`/user/${c?.user_id}`} className="text-decoration-none text-danger transition-hover me-1">
+                          {c?.username || "Usuario"}
+                        </Link>
+                        {editingId === c?.id && <span className="text-primary ms-2 fs-6 fw-normal"><i className="fas fa-pen me-1"></i>Editando</span>}
                       </h6>
 
                       {editingId === c.id ? (
