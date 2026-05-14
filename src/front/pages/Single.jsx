@@ -191,12 +191,48 @@ export const Single = () => {
 
   // --- FUNCIÓN DE RATING ACTUALIZADA CON 5 NIVELES ---
   const getRankingConfig = (score) => {
-    if (score >= 90) return { label: "Excelente", color: "#1B5E20", shadow: "rgba(27, 94, 32, 0.2)" };
-    if (score >= 80) return { label: "Muy Bueno", color: "#2E7D32", shadow: "rgba(46, 125, 50, 0.2)" };
-    if (score >= 60) return { label: "Bueno", color: "#0d6efd", shadow: "rgba(13, 110, 253, 0.2)" };
-    if (score >= 40) return { label: "Regular", color: "#ffc107", shadow: "rgba(255, 193, 7, 0.2)" };
-    return { label: "Malo", color: "#dc3545", shadow: "rgba(220, 53, 69, 0.2)" };
-  };
+        if (score >= 90) return { 
+            label: "Excelente", 
+            color: "#000000", // Dorado Intenso
+            shadow: "rgba(218, 165, 32, 1)",
+            cardBg: "#000000",              // Fondo Negro Premium
+            textColor: "#DAA520",           // Texto Oro
+            secondaryText: "rgba(218, 165, 32, 0.8)",
+            isExcellent: true 
+        };
+        if (score >= 80) return { 
+            label: "Muy Bueno", 
+            color: "rgba(21, 128, 61, 1)", // Verde Bosque
+            shadow: "rgba(21, 128, 61, 0.2)",
+            cardBg: "rgba(21, 128, 61, 0.05)", // Fondo sutil verde
+            textColor: "#15803D", 
+            secondaryText: "#4b5563"
+        };
+        if (score >= 60) return { 
+            label: "Bueno", 
+            color: "rgba(37, 99, 235, 1)", // Azul Safiro (Nuevo)
+            shadow: "rgba(37, 99, 235, 0.2)",
+            cardBg: "rgba(37, 99, 235, 0.05)", // Fondo sutil azul
+            textColor: "#1D4ED8", 
+            secondaryText: "#6b7280"
+        };
+        if (score >= 40) return { 
+            label: "Regular", 
+            color: "rgba(249, 115, 22, 1)", // Naranja Coral
+            shadow: "rgba(249, 115, 22, 0.2)",
+            cardBg: "rgba(249, 115, 22, 0.05)", // Fondo sutil naranja
+            textColor: "#C2410C",
+            secondaryText: "#6b7280"
+        };
+        return { 
+            label: "Malo", 
+            color: "rgb(211, 47, 47)",  // Rojo Carmesí
+            shadow: "rgba(225, 29, 72, 0.2)",
+            cardBg: "rgba(225, 29, 72, 0.05)", // Fondo sutil rojo
+            textColor: "#BE123C",
+            secondaryText: "#6b7280"
+        };
+    };
   const config = getRankingConfig(restaurant.score);
   const isUserLoggedIn = store.token || store.user || sessionStorage.getItem("token");
 
